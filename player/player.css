@@ -1,0 +1,122 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.video-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.video-area video,
+.video-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.empty-state {
+  position: absolute;
+  font-size: 22px;
+  opacity: 0.5;
+}
+
+/* Sistema de ancoragem: cada widget flutua sobre o video, na posicao
+   configurada pelo painel (widgets.<modulo>.position). O fundo semi-
+   transparente garante legibilidade independente do que estiver no video. */
+.anchor {
+  position: absolute;
+  z-index: 10;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.anchor.pos-top-left    { top: 20px; left: 24px; text-align: left; }
+.anchor.pos-top-center  { top: 20px; left: 50%; transform: translateX(-50%); text-align: center; }
+.anchor.pos-top-right   { top: 20px; right: 24px; text-align: right; }
+.anchor.pos-bottom-left    { bottom: 24px; left: 24px; text-align: left; }
+.anchor.pos-bottom-center  { bottom: 24px; left: 50%; transform: translateX(-50%); text-align: center; }
+.anchor.pos-bottom-right   { bottom: 24px; right: 24px; text-align: right; }
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.logo.size-small { font-size: 18px; }
+.logo.size-medium { font-size: 28px; }
+.logo.size-large { font-size: 40px; }
+
+.clock-cluster .clock {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.clock-cluster .date {
+  font-size: 15px;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.weather {
+  font-size: 15px;
+}
+
+.music-widget {
+  font-size: 14px;
+  max-width: 320px;
+}
+
+.promo-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 18px 28px;
+  background: #c8102e;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 5;
+}
+
+.promo-bar.pos-bottom { bottom: 0; }
+.promo-bar.pos-top { top: 0; }
+
+.promo-bar.animate-slide.pos-bottom {
+  animation: slideInBottom 0.6s ease-out;
+}
+
+.promo-bar.animate-slide.pos-top {
+  animation: slideInTop 0.6s ease-out;
+}
+
+@keyframes slideInBottom {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInTop {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

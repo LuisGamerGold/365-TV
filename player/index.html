@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>365 TV</title>
+<link rel="stylesheet" href="player.css" />
+</head>
+<body>
+  <div id="app">
+    <main class="video-area" id="video-area">
+      <video id="video-el" autoplay muted></video>
+      <img id="image-el" style="display:none" />
+      <div class="empty-state" id="empty-state">365 TV — adicione videos pelo painel administrativo</div>
+    </main>
+
+    <div class="logo anchor" id="logo">365 MOTOS</div>
+
+    <div class="clock-cluster anchor" id="clock-cluster">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date">---</div>
+    </div>
+
+    <div class="weather anchor" id="weather"></div>
+
+    <div class="music-widget anchor" id="music-widget" style="display:none"></div>
+
+    <footer class="promo-bar" id="promo-bar" style="display:none">
+      <span id="promo-text"></span>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="modules/anchor.js"></script>
+  <script src="modules/clock.js"></script>
+  <script src="modules/weather.js"></script>
+  <script src="modules/logo.js"></script>
+  <script src="modules/promo-bar.js"></script>
+  <script src="modules/music-widget.js"></script>
+  <script src="modules/video-player.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>
