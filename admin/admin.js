@@ -198,9 +198,27 @@ async function loadMusic() {
   if (music.spotify.connected) {
     statusEl.textContent = `Conectado${music.spotify.deviceName ? ' — dispositivo: ' + music.spotify.deviceName : ' — nenhum dispositivo selecionado'}`;
     loadDevices();
+    loadPlaylists();
   } else {
     statusEl.textContent = 'Spotify nao conectado';
     document.getElementById('spotify-devices').innerHTML = '';
+    document.getElementById('spotify-playlist-select').innerHTML = '';
+  }
+}
+
+async function loadPlaylists() {
+  const select = document.getElementById('spotify-playlist-select');
+  try {
+    const playlists = await api('/admin/api/music/spotify/playlists');
+    select.innerHTML = '';
+    playlists.forEach((p) => {
+      const option = document.createElement('option');
+      option.value = p.uri;
+      option.textContent = `${p.name}${p.tracks !== null ? ` (${p.tracks} músicas)` : ''}`;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    select.innerHTML = `<option>Erro ao carregar playlists</option>`;
   }
 }
 
@@ -243,6 +261,12 @@ document.getElementById('spotify-connect-btn').addEventListener('click', () => {
 document.getElementById('spotify-disconnect-btn').addEventListener('click', async () => {
   await api('/admin/api/music/spotify/disconnect', { method: 'POST' });
   loadMusic();
+});
+
+document.getElementById('spotify-playlist-play').addEventListener('click', () => {
+  const uri = document.getElementById('spotify-playlist-select').value;
+  if (!uri) return;
+  api('/admin/api/music/play', { method: 'POST', body: JSON.stringify({ contextUri: uri }) });
 });
 
 document.getElementById('music-play').addEventListener('click', () => api('/admin/api/music/play', { method: 'POST' }));

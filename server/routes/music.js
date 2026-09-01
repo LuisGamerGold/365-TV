@@ -53,6 +53,14 @@ module.exports = function musicRouter(state) {
     }
   });
 
+  router.get('/spotify/playlists', async (req, res) => {
+    try {
+      res.json(await provider.listPlaylists());
+    } catch (err) {
+      res.status(502).json({ error: err.message });
+    }
+  });
+
   router.post('/spotify/devices/:id/select', async (req, res) => {
     try {
       await provider.selectDevice(req.params.id);

@@ -8,7 +8,9 @@ const API_BASE = 'https://api.spotify.com/v1';
 const SCOPES = [
   'user-read-playback-state',
   'user-modify-playback-state',
-  'user-read-currently-playing'
+  'user-read-currently-playing',
+  'playlist-read-private',
+  'playlist-read-collaborative'
 ].join(' ');
 
 function base64url(buffer) {
@@ -164,6 +166,18 @@ class SpotifyProvider extends MusicProvider {
 
   _deviceId() {
     return this.state.get('music').spotify.deviceId;
+  }
+
+  async listPlaylists() {
+    const data = await this._api('GET', '/me/playlists', { query: { limit: 50 } });
+    if (!data) return [];
+    return data.items.map((p) => ({
+      id: p.id,
+      name: p.name,
+      uri: p.uri,
+      image: p.images?.[0]?.url || null,
+      tracks: p.tracks?.total ?? null
+    }));
   }
 
   async play(contextUri) {
