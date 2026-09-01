@@ -22,9 +22,27 @@ O modo acima (`npm start`) é só para desenvolvimento/testes. Para instalar de 
 npm run dist
 ```
 
-Isso cria o arquivo `release/365 TV Setup <versão>.exe`. Esse é o único arquivo que precisa ir para o PC da loja (via pendrive, por exemplo). Ao rodar esse instalador no PC de destino, o programa se instala sozinho e já abre automaticamente — inclusive a cada vez que o Windows ligar.
+Isso cria o arquivo `release/365 TV Setup <versão>.exe`. Esse instalador só precisa ser rodado manualmente **uma vez** (a primeira instalação) — depois disso, o próprio programa se atualiza sozinho (veja abaixo). Ao rodar esse instalador no PC de destino, o programa se instala sozinho e já abre automaticamente — inclusive a cada vez que o Windows ligar.
 
 Os dados (vídeos, promoções, senha, tokens do Spotify) ficam salvos em `%APPDATA%\365-tv\data` no PC onde o programa está instalado — sobrevivem a reinstalações/atualizações do programa.
+
+## Atualização automática (sem pendrive)
+
+O 365 TV verifica sozinho, a cada poucas horas, se existe uma versão mais nova publicada no GitHub Releases do projeto (`https://github.com/LuisGamerGold/365-TV/releases`). Se existir, ele baixa e reinicia sozinho para aplicar — sem precisar levar pendrive até o PC da loja de novo.
+
+### Como publicar uma nova versão
+
+Sempre que fizer uma alteração no código:
+
+1. Aumente o número da versão em `package.json` (campo `"version"`) — ex: de `0.2.0` para `0.2.1`.
+2. Rode:
+   ```
+   npm run release
+   ```
+   Isso compila o instalador, confere a integridade dos arquivos e publica tudo automaticamente no GitHub Releases.
+3. Pronto — o PC da TV vai detectar sozinho a versão nova na próxima checagem (a cada 4h, ou 30s depois de ligar) e se atualizar sem intervenção.
+
+Esse comando precisa da variável de ambiente `GH_TOKEN` configurada no computador (um Personal Access Token do GitHub com escopo "repo") — a mesma usada na configuração inicial.
 
 ## Acessando o Painel Administrativo
 
