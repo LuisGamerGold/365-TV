@@ -1,13 +1,13 @@
 {
   "name": "365-tv",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "365 TV - sistema de midia e informacoes para a TV da loja 365 Motos",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --x64",
-    "release": "electron-builder --win --x64 --publish always"
+    "release": "node scripts/publish-release.js"
   },
   "dependencies": {
     "cookie-session": "^2.1.0",
@@ -48,8 +48,7 @@
     "publish": {
       "provider": "github",
       "owner": "LuisGamerGold",
-      "repo": "365-tv",
-      "releaseType": "release"
+      "repo": "365-tv"
     }
   }
 }
