@@ -427,6 +427,16 @@ body {
 #promo-bar.pos-bottom { position: absolute; left: 44px; bottom: 64px; }
 #promo-bar.pos-top { position: absolute; left: 44px; top: 64px; }
 
+/* Se algum widget estiver ancorado no mesmo lado (cima/baixo) que a
+   tarjeta, ela sobrepunha/vazava texto por cima do widget (mesma faixa
+   vertical, ambos comecando perto da borda). "needs-clearance" (alternada
+   via JS em player.js, quando ha' widget ancorado no mesmo lado) empurra a
+   tarjeta pra alem da altura maxima de um widget (110px) + respiro - so'
+   quando realmente precisa, pra nao mudar a posicao "encostada na borda"
+   de quando nao ha conflito nenhum. */
+#promo-bar.pos-bottom.needs-clearance { bottom: 188px; }
+#promo-bar.pos-top.needs-clearance { top: 168px; }
+
 /* Tela de oferta: exibida em tela cheia, aleatoriamente, entre um video e
    outro (ver player/modules/oferta-player.js). Fica acima do video-area mas
    abaixo dos slots fixos (.anchor-slot, z-index 10), entao clima/relogio/
