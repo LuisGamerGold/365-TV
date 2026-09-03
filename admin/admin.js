@@ -145,6 +145,90 @@ function ofertaPhotoUrl(item, filename) {
   return `/media/oferta/${item.id}/${filename}`;
 }
 
+// Arrastar para reordenar fotos (mouse, touch e caneta - Pointer Events cobre
+// os tres, ao contrario do HTML5 drag-and-drop nativo que nao dispara em
+// telas touch). Generico: funciona tanto na grade das ofertas ja salvas
+// quanto na previa do formulario "Adicionar oferta" - o chamador so' precisa
+// mutar seus proprios dados e re-renderizar a grade dentro de onSwap.
+function attachOfertaPhotoDrag(gridEl, onSwap) {
+  let drag = null;
+
+  function resetStyles(el) {
+    el.classList.remove('dragging');
+    el.style.position = '';
+    el.style.zIndex = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.width = '';
+    el.style.height = '';
+    el.style.pointerEvents = '';
+  }
+
+  gridEl.querySelectorAll('.oferta-photo').forEach((el) => {
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.target.closest('button')) return; // deixa o botao de remover funcionar normalmente
+      const rect = el.getBoundingClientRect();
+      drag = {
+        el,
+        pointerId: e.pointerId,
+        idx: Number(el.dataset.idx),
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        w: rect.width,
+        h: rect.height,
+        moved: false
+      };
+      el.setPointerCapture(e.pointerId);
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        drag.el.classList.add('dragging');
+        drag.el.style.position = 'fixed';
+        drag.el.style.zIndex = '999';
+        drag.el.style.width = drag.w + 'px';
+        drag.el.style.height = drag.h + 'px';
+        drag.el.style.pointerEvents = 'none';
+      }
+      drag.el.style.left = `${e.clientX - drag.offsetX}px`;
+      drag.el.style.top = `${e.clientY - drag.offsetY}px`;
+
+      drag.el.style.visibility = 'hidden';
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      drag.el.style.visibility = '';
+      gridEl.querySelectorAll('.oferta-photo').forEach((s) => s.classList.remove('drag-over'));
+      const target = under && under.closest('.oferta-photo');
+      if (target && target !== drag.el) target.classList.add('drag-over');
+    });
+
+    const finish = (e) => {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      const d = drag;
+      drag = null;
+
+      if (!d.moved) return;
+
+      d.el.style.visibility = 'hidden';
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      d.el.style.visibility = '';
+      gridEl.querySelectorAll('.oferta-photo').forEach((s) => s.classList.remove('drag-over'));
+
+      const target = under && under.closest('.oferta-photo');
+      const targetIdx = target ? Number(target.dataset.idx) : d.idx;
+      if (target && targetIdx !== d.idx) {
+        onSwap(d.idx, targetIdx); // espera-se que isso re-renderize a grade, o que ja reseta os estilos
+      } else {
+        resetStyles(d.el);
+      }
+    };
+    el.addEventListener('pointerup', finish);
+    el.addEventListener('pointercancel', finish);
+  });
+}
+
 function ofertaPhotosBlock(item) {
   const wrap = document.createElement('div');
   wrap.className = 'oferta-photos';
@@ -152,22 +236,13 @@ function ofertaPhotosBlock(item) {
   item.photos.forEach((filename, index) => {
     const box = document.createElement('div');
     box.className = 'oferta-photo';
+    box.dataset.idx = index;
     box.innerHTML = `
-      <img src="${ofertaPhotoUrl(item, filename)}" alt="Foto ${index + 1}" />
+      <img src="${ofertaPhotoUrl(item, filename)}" alt="Foto ${index + 1}" draggable="false" />
       <span class="oferta-photo-order">${index + 1}</span>
-      <div class="oferta-photo-actions">
-        <button type="button" data-action="photo-up" title="Mover para cima">↑</button>
-        <button type="button" data-action="photo-down" title="Mover para baixo">↓</button>
-        <button type="button" data-action="photo-remove" title="Remover">✕</button>
-      </div>
+      <button type="button" class="oferta-photo-remove" title="Remover">✕</button>
     `;
-
-    box.querySelector('[data-action="photo-up"]').disabled = index === 0;
-    box.querySelector('[data-action="photo-down"]').disabled = index === item.photos.length - 1;
-    box.querySelector('[data-action="photo-up"]').addEventListener('click', () => reorderOfertaPhoto(item, index, -1));
-    box.querySelector('[data-action="photo-down"]').addEventListener('click', () => reorderOfertaPhoto(item, index, 1));
-    box.querySelector('[data-action="photo-remove"]').addEventListener('click', () => removeOfertaPhoto(item, filename));
-
+    box.querySelector('.oferta-photo-remove').addEventListener('click', () => removeOfertaPhoto(item, filename));
     wrap.appendChild(box);
   });
 
@@ -180,14 +255,14 @@ function ofertaPhotosBlock(item) {
     wrap.appendChild(addLabel);
   }
 
+  attachOfertaPhotoDrag(wrap, (fromIdx, toIdx) => reorderOfertaPhoto(item, fromIdx, toIdx));
+
   return wrap;
 }
 
-async function reorderOfertaPhoto(item, index, direction) {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= item.photos.length) return;
+async function reorderOfertaPhoto(item, fromIndex, toIndex) {
   const order = item.photos.slice();
-  [order[index], order[newIndex]] = [order[newIndex], order[index]];
+  [order[fromIndex], order[toIndex]] = [order[toIndex], order[fromIndex]];
   await api(`/admin/api/oferta/${item.id}/photos/order`, { method: 'PATCH', body: JSON.stringify({ order }) });
   loadOferta();
 }
@@ -269,7 +344,7 @@ function ofertaListItem(item) {
       const photosLabel = document.createElement('p');
       photosLabel.className = 'subtitle';
       photosLabel.style.margin = '8px 0 4px';
-      photosLabel.textContent = 'Fotos (arraste a ordem com as setas)';
+      photosLabel.textContent = 'Fotos (arraste para reordenar)';
       expandSection.appendChild(photosLabel);
       expandSection.appendChild(ofertaPhotosBlock(item));
     }
@@ -313,12 +388,66 @@ document.getElementById('oferta-config-form').addEventListener('submit', async (
   alert('Configuração de oferta salva!');
 });
 
+// ---------- Previa de fotos do formulario "Adicionar oferta" ----------
+// Guarda os Files fora do <input> (que virou so' um "+" dentro da propria
+// grade, igual ao das ofertas ja salvas) pra poder reordenar/remover antes
+// do envio.
+let novaOfertaFiles = [];
+let novaOfertaPreviewUrls = [];
+
+function renderNovaOfertaPhotos() {
+  const wrap = document.getElementById('oferta-photos-preview');
+  wrap.innerHTML = '';
+
+  novaOfertaFiles.forEach((file, index) => {
+    const box = document.createElement('div');
+    box.className = 'oferta-photo';
+    box.dataset.idx = index;
+    box.innerHTML = `
+      <img src="${novaOfertaPreviewUrls[index]}" alt="Foto ${index + 1}" draggable="false" />
+      <span class="oferta-photo-order">${index + 1}</span>
+      <button type="button" class="oferta-photo-remove" title="Remover">✕</button>
+    `;
+    box.querySelector('.oferta-photo-remove').addEventListener('click', () => {
+      URL.revokeObjectURL(novaOfertaPreviewUrls[index]);
+      novaOfertaFiles.splice(index, 1);
+      novaOfertaPreviewUrls.splice(index, 1);
+      renderNovaOfertaPhotos();
+    });
+    wrap.appendChild(box);
+  });
+
+  if (novaOfertaFiles.length < OFERTA_MAX_PHOTOS) {
+    const addLabel = document.createElement('label');
+    addLabel.className = 'oferta-photo-add';
+    addLabel.title = `Adicionar foto (${novaOfertaFiles.length}/${OFERTA_MAX_PHOTOS})`;
+    addLabel.innerHTML = '+<input type="file" accept="image/*" multiple hidden />';
+    addLabel.querySelector('input').addEventListener('change', (e) => {
+      const remaining = OFERTA_MAX_PHOTOS - novaOfertaFiles.length;
+      if (e.target.files.length > remaining) {
+        alert(`Máximo de ${OFERTA_MAX_PHOTOS} fotos por oferta.`);
+      }
+      Array.from(e.target.files).slice(0, remaining).forEach((file) => {
+        novaOfertaFiles.push(file);
+        novaOfertaPreviewUrls.push(URL.createObjectURL(file));
+      });
+      renderNovaOfertaPhotos();
+    });
+    wrap.appendChild(addLabel);
+  }
+
+  attachOfertaPhotoDrag(wrap, (fromIdx, toIdx) => {
+    [novaOfertaFiles[fromIdx], novaOfertaFiles[toIdx]] = [novaOfertaFiles[toIdx], novaOfertaFiles[fromIdx]];
+    [novaOfertaPreviewUrls[fromIdx], novaOfertaPreviewUrls[toIdx]] = [novaOfertaPreviewUrls[toIdx], novaOfertaPreviewUrls[fromIdx]];
+    renderNovaOfertaPhotos();
+  });
+}
+renderNovaOfertaPhotos();
+
 document.getElementById('oferta-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const files = document.getElementById('oferta-photos').files;
-  if (!files.length) return;
-  if (files.length > OFERTA_MAX_PHOTOS) {
-    alert(`Máximo de ${OFERTA_MAX_PHOTOS} fotos por oferta.`);
+  if (!novaOfertaFiles.length) {
+    alert('Adicione ao menos uma foto.');
     return;
   }
 
@@ -329,11 +458,15 @@ document.getElementById('oferta-form').addEventListener('submit', async (e) => {
   formData.append('price', document.getElementById('oferta-price').value);
   formData.append('financingNote', document.getElementById('oferta-financing').value);
   formData.append('qrUrl', document.getElementById('oferta-qrurl').value);
-  Array.from(files).forEach((file) => formData.append('photos', file));
+  novaOfertaFiles.forEach((file) => formData.append('photos', file));
 
   const res = await fetch('/admin/api/oferta', { method: 'POST', body: formData });
   if (res.ok) {
     e.target.reset();
+    novaOfertaPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    novaOfertaFiles = [];
+    novaOfertaPreviewUrls = [];
+    renderNovaOfertaPhotos();
     loadOferta();
   } else {
     alert('Falha ao adicionar oferta: ' + (await res.text()));

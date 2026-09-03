@@ -5,7 +5,6 @@ window.MusicWidgetModule = (function () {
   const marqueeEl = document.getElementById('music-marquee');
   const trackEl = document.getElementById('music-track');
   const titleEl = document.getElementById('music-title');
-  const artistEl = document.getElementById('music-artist');
 
   let enabled = true;
   let position = 'bottom-right';
@@ -48,8 +47,7 @@ window.MusicWidgetModule = (function () {
       return;
     }
 
-    titleEl.textContent = lastTrack.title || '';
-    artistEl.textContent = lastTrack.artist || '';
+    titleEl.textContent = [lastTrack.artist, lastTrack.title].filter(Boolean).join(' — ');
 
     if (lastTrack.albumArt) {
       coverEl.src = lastTrack.albumArt;

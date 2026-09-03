@@ -84,9 +84,8 @@
           <label>Link do anúncio (gera o QR code)
             <input type="url" id="oferta-qrurl" placeholder="https://..." />
           </label>
-          <label>Fotos (máx. 5, pode selecionar várias)
-            <input type="file" id="oferta-photos" accept="image/*" multiple required />
-          </label>
+          <label>Fotos (máx. 5, arraste para reordenar)</label>
+          <div class="oferta-photos" id="oferta-photos-preview"></div>
           <button type="submit">Adicionar oferta</button>
         </form>
         <ul id="oferta-list" class="list oferta-list"></ul>

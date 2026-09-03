@@ -303,6 +303,10 @@ body {
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
+  /* padding-left igual a largura do fade do .music-marquee: sem isso, a
+     mascara desbota as primeiras letras do texto mesmo parado (translateX 0),
+     dando impressao de nome cortado no inicio. */
+  padding-left: 12px;
   padding-right: 45px;
 }
 
@@ -318,10 +322,6 @@ body {
   object-position: left center;
   margin-top: 4px;
   display: block;
-}
-
-.music-artist {
-  display: none;
 }
 
 /* ==========================

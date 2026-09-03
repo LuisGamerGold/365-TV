@@ -231,7 +231,6 @@ button.danger {
 }
 button.danger:hover { background: rgba(255,59,48,0.12); }
 
-.oferta-photo-actions button,
 .expand-section button[data-action] {
   padding: 6px 12px;
 }
@@ -347,9 +346,11 @@ button.danger:hover { background: rgba(255,59,48,0.12); }
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.08);
+  cursor: grab;
+  touch-action: none;
 }
 
-.oferta-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.oferta-photo img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 
 .oferta-photo-order {
   position: absolute;
@@ -360,19 +361,28 @@ button.danger:hover { background: rgba(255,59,48,0.12); }
   line-height: 1;
   padding: 3px 6px;
   border-radius: 6px;
+  pointer-events: none;
 }
 
-.oferta-photo-actions {
+.oferta-photo-remove {
   position: absolute;
-  inset: auto 0 0 0;
+  top: 4px; right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 2px;
-  background: rgba(0,0,0,0.5);
-  padding: 3px 0;
+  padding: 0;
 }
-.oferta-photo-actions button { background: transparent; color: #fff; font-size: 11px; padding: 2px 7px; }
-.oferta-photo-actions button:hover { background: rgba(255,255,255,0.2); }
+.oferta-photo-remove:hover { background: rgba(200,0,0,0.75); }
+
+.oferta-photo.drag-over { outline: 2px solid var(--blue); outline-offset: -2px; }
+.oferta-photo.dragging { opacity: 0.85; box-shadow: 0 12px 30px rgba(0,0,0,0.3); cursor: grabbing; }
 
 .oferta-photo-add {
   width: 84px;
