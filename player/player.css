@@ -1,122 +1,754 @@
+:root {
+  --blue: #1478ea;
+  --ink: #121417;
+  --card: rgba(255, 255, 255, .97);
+  --shadow: 0 8px 28px rgba(20, 32, 48, .12);
+  --line: #8e8e8e;
+  --ticker-duration: 26s;
+  --music-duration: 12s;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: #000;
-  color: #fff;
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
-
-#app {
   width: 100%;
   height: 100%;
-  position: relative;
+  overflow: hidden;
+  background: #000;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  color: var(--ink);
 }
 
-.video-area {
+body {
+  display: grid;
+  place-items: center;
+}
+
+/* Canvas fixo 1920x1080: todo o layout e' desenhado nesse tamanho e depois
+   escalado como um todo (ver fitScreen() em player.js) para caber em
+   qualquer resolucao real de tela sem recalcular proporcoes - e' a mesma
+   tecnica dos protótipos HTML de referencia. */
+#screen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center center;
+  overflow: hidden;
+  background: #eef1f4;
+}
+
+.video-layer {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(800px 550px at 100% 15%, rgba(80, 160, 255, .13), transparent 72%),
+    radial-gradient(620px 520px at 0% 100%, rgba(110, 215, 175, .08), transparent 72%),
+    linear-gradient(135deg, #eef1f3 0%, #f8f8f9 52%, #edf2f6 100%);
 }
 
-.video-area video,
-.video-area img {
+#video-el,
+#image-el {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background: #000;
+  display: block;
 }
 
 .empty-state {
   position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
   font-size: 22px;
+  color: #fff;
   opacity: 0.5;
+  text-align: center;
+  padding: 0 60px;
 }
 
-/* Sistema de ancoragem: cada widget flutua sobre o video, na posicao
-   configurada pelo painel (widgets.<modulo>.position). O fundo semi-
-   transparente garante legibilidade independente do que estiver no video. */
-.anchor {
+/* Slots fixos: 6 pontos do canvas 1920x1080, cada um um container flex. Os
+   widgets (logo, relogio/clima, musica) sao movidos para dentro do slot da
+   posicao configurada (ver modules/anchor.js) - varios no mesmo slot ficam
+   lado a lado. Ficam por cima do video E da tela de oferta: so o "meio"
+   muda. Offset com margem de seguranca de TV (bem maior que os 64px/29px
+   dos protótipos de referencia): o destino final e' uma TV via HDMI, que
+   costuma cortar uma faixa das bordas por overscan a menos que "Just Scan"
+   esteja ligado - por isso os cantos ficam mais afastados da borda real. */
+.anchor-slot {
   position: absolute;
   z-index: 10;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.4);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-.anchor.pos-top-left    { top: 20px; left: 24px; text-align: left; }
-.anchor.pos-top-center  { top: 20px; left: 50%; transform: translateX(-50%); text-align: center; }
-.anchor.pos-top-right   { top: 20px; right: 24px; text-align: right; }
-.anchor.pos-bottom-left    { bottom: 24px; left: 24px; text-align: left; }
-.anchor.pos-bottom-center  { bottom: 24px; left: 50%; transform: translateX(-50%); text-align: center; }
-.anchor.pos-bottom-right   { bottom: 24px; right: 24px; text-align: right; }
-
-.logo {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 1px;
-}
-
-.logo.size-small { font-size: 18px; }
-.logo.size-medium { font-size: 28px; }
-.logo.size-large { font-size: 40px; }
-
-.clock-cluster .clock {
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.clock-cluster .date {
-  font-size: 15px;
-  opacity: 0.85;
-  text-transform: uppercase;
-}
-
-.weather {
-  font-size: 15px;
-}
-
-.music-widget {
-  font-size: 14px;
-  max-width: 320px;
-}
-
-.promo-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  padding: 18px 28px;
-  background: #c8102e;
-  font-size: 22px;
-  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 10px;
-  z-index: 5;
+  gap: 28px;
 }
 
-.promo-bar.pos-bottom { bottom: 0; }
-.promo-bar.pos-top { top: 0; }
+/* left/right em 44px para alinhar com a borda esquerda da foto/hero da
+   oferta (.hero tem left:44px). Topo em 44px: os cartoes tem 110px de
+   altura, entao 44+110=154px, deixando folga antes da foto (.hero comeca
+   em top:173px) - nao pode passar disso ou o cartao invade a foto. */
+.anchor-slot[data-pos="top-left"]      { top: 44px; left: 44px; }
+.anchor-slot[data-pos="top-center"]    { top: 44px; left: 50%; transform: translateX(-50%); }
+.anchor-slot[data-pos="top-right"]     { top: 44px; right: 44px; flex-direction: row-reverse; }
+.anchor-slot[data-pos="bottom-left"]   { bottom: 64px; left: 44px; }
+.anchor-slot[data-pos="bottom-center"] { bottom: 64px; left: 50%; transform: translateX(-50%); }
+.anchor-slot[data-pos="bottom-right"]  { bottom: 64px; right: 44px; flex-direction: row-reverse; }
 
-.promo-bar.animate-slide.pos-bottom {
-  animation: slideInBottom 0.6s ease-out;
+/* Cartao branco flutuante: base compartilhada por todos os widgets fixos
+   (horario/clima, musica, tarjeta) e pelos blocos da tela de oferta. */
+/* Sem position aqui de proposito: .logo/.status-card/.music-card entram
+   como itens normais do flex do .anchor-slot (lado a lado); ja' .offer-card
+   e' posicionado direto contra o canvas e declara position:absolute na
+   propria regra (assim como #promo-bar e .hero/.dots). Se "position:absolute"
+   ficasse aqui, os widgets do anchor-slot perderiam as coordenadas de
+   flex e colapsariam todos na mesma posicao, um cobrindo o outro. */
+.card {
+  background: var(--card);
+  border-radius: 23px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.promo-bar.animate-slide.pos-top {
-  animation: slideInTop 0.6s ease-out;
+.logo {
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  color: var(--blue);
+  white-space: nowrap;
+  flex: none;
 }
 
-@keyframes slideInBottom {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.logo.size-small { font-size: 16px; }
+.logo.size-medium { font-size: 22px; }
+.logo.size-large { font-size: 30px; }
+
+/* ==========================
+   HORARIO / CLIMA (status-card)
+   ========================== */
+.status-card {
+  width: 342px;
+  height: 110px;
 }
 
-@keyframes slideInTop {
-  from { transform: translateY(-100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.status-panel {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events: none;
 }
+
+.status-panel.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.datetime-panel {
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.dt-row {
+  display: flex;
+  align-items: center;
+}
+
+.date-icon {
+  width: 37px;
+  height: 37px;
+  object-fit: contain;
+  margin-right: 14px;
+  flex: 0 0 37px;
+}
+
+.clock-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-right: 11px;
+  flex: 0 0 40px;
+}
+
+.date-text {
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.time-text {
+  font-size: 31px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.weather-panel {
+  padding: 9px 20px 9px 18px;
+  display: flex;
+  align-items: center;
+}
+
+.weather-art {
+  width: 98px;
+  height: 78px;
+  object-fit: contain;
+  flex: 0 0 98px;
+  margin-right: 8px;
+}
+
+.weather-copy {
+  min-width: 0;
+  line-height: 1.02;
+}
+
+.weather-city {
+  font-size: 23px;
+  font-weight: 500;
+}
+
+.weather-temp {
+  margin-top: 2px;
+  font-size: 31px;
+  font-weight: 400;
+}
+
+.weather-desc {
+  margin-top: 6px;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.weather-desc:empty { display: none; }
+
+/* ==========================
+   MUSICA (player visual)
+   ========================== */
+.music-card {
+  width: 430px;
+  height: 110px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.album-box {
+  width: 84px;
+  height: 84px;
+  border-radius: 15px;
+  flex: 0 0 84px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #f1f3f5, #e4e8ec);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18);
+}
+
+.album-box img {
+  width: 100%;
+  height: 100%;
+  display: none;
+  object-fit: cover;
+}
+
+.album-placeholder {
+  width: 35px;
+  height: 35px;
+  opacity: .25;
+}
+
+.music-info {
+  flex: 1;
+  min-width: 0;
+  height: 84px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.music-marquee {
+  position: relative;
+  width: 100%;
+  height: 33px;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+}
+
+.music-track {
+  height: 33px;
+  width: max-content;
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: musicMove var(--music-duration) ease-in-out infinite alternate;
+}
+
+.music-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  padding-right: 45px;
+}
+
+@keyframes musicMove {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { transform: translateX(var(--music-shift, 0px)); }
+}
+
+.music-controls-img {
+  width: 250px;
+  height: 39px;
+  object-fit: contain;
+  object-position: left center;
+  margin-top: 4px;
+  display: block;
+}
+
+.music-artist {
+  display: none;
+}
+
+/* ==========================
+   TARJETA (ticker continuo)
+   ========================== */
+.ticker {
+  width: 1118px;
+  height: 78px;
+  /* precisa ficar acima da .oferta-area (z-index 8) para nao ser encoberta
+     quando a tela de oferta aparece por cima do video - sem isso a tarjeta
+     "sumia" toda vez que a oferta entrava, dando a impressao de mudar de
+     lugar. Fica no mesmo nivel dos outros widgets fixos (.anchor-slot). */
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.ticker-icon-area {
+  position: relative;
+  z-index: 1;
+  width: 98px;
+  height: 100%;
+  flex: 0 0 98px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .99);
+}
+
+.ticker-icon-area::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -28px;
+  width: 30px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .99), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.megaphone {
+  width: 58px;
+  height: 55px;
+  object-fit: contain;
+  display: block;
+}
+
+.ticker-window {
+  position: relative;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  will-change: transform;
+  animation: tickerScroll var(--ticker-duration) linear infinite;
+}
+
+.ticker-group {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  padding-right: 26px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ticker-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex: 0 0 auto;
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-1 * var(--ticker-group-width, 600px))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-panel,
+  .music-track,
+  .ticker-track { transition: none; animation: none; }
+}
+
+/* Posicionamento fixo dos widgets: por padrao coincide com o slot
+   "top-left" (mesmo canto usado nos protótipos), mas o painel admin pode
+   reposiciona-los (ver modules/anchor.js). A tarjeta segue a posicao
+   escolhida em promo.position (cima/baixo). */
+#promo-bar.pos-bottom { position: absolute; left: 44px; bottom: 64px; }
+#promo-bar.pos-top { position: absolute; left: 44px; top: 64px; }
+
+/* Tela de oferta: exibida em tela cheia, aleatoriamente, entre um video e
+   outro (ver player/modules/oferta-player.js). Fica acima do video-area mas
+   abaixo dos slots fixos (.anchor-slot, z-index 10), entao clima/relogio/
+   musica continuam visiveis por cima dela. */
+.oferta-area {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  background:
+    radial-gradient(650px 500px at 100% 5%, rgba(105, 177, 255, .16), transparent 72%),
+    radial-gradient(650px 500px at 0% 100%, rgba(145, 220, 185, .10), transparent 72%),
+    linear-gradient(135deg, #f3f4f5 0%, #f9f9fa 52%, #eef2f5 100%);
+}
+
+.oferta-area.active {
+  display: block;
+}
+
+.hero {
+  position: absolute;
+  left: 44px;
+  top: 173px;
+  width: 1149px;
+  /* 730px no protótipo original; reduzido para abrir espaco antes da
+     tarjeta, que subiu por causa da margem de seguranca de TV. */
+  height: 700px;
+  border-radius: 23px;
+  overflow: hidden;
+  background: #dfe2e5;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .08);
+}
+
+.hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .55s ease;
+}
+
+.hero img.active {
+  opacity: 1;
+}
+
+.dots {
+  position: absolute;
+  left: 44px;
+  top: 883px;
+  width: 1149px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.dots span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #bdbdbd;
+}
+
+.dots span.active {
+  background: var(--blue);
+}
+
+.offer-card {
+  position: absolute;
+  left: 1249px;
+  top: 41px;
+  width: 620px;
+  height: 1007px;
+  padding: 44px 57px 34px;
+  /* flex column + margin-top:auto no qr-row: distribui o conteudo ate o fim
+     do cartao (empurrando QR+legenda pra baixo) em vez de deixar um vao em
+     branco depois de "Confira o anuncio completo", igual a coluna da foto
+     que preenche ate perto da tarjeta. */
+  display: flex;
+  flex-direction: column;
+}
+
+.offer-label {
+  color: var(--blue);
+  font-size: 58px;
+  line-height: 1.03;
+  font-weight: 800;
+  letter-spacing: -1.7px;
+}
+
+.offer-model {
+  margin-top: 27px;
+  font-size: 51px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -.8px;
+}
+
+.meta {
+  margin-top: 42px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  min-height: 62px;
+  margin-bottom: 27px;
+}
+
+.meta-icon {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  flex: 0 0 58px;
+  margin-right: 22px;
+}
+
+.meta-text {
+  font-size: 31px;
+}
+
+.divider {
+  width: 100%;
+  height: 4px;
+  background: var(--line);
+}
+
+.price {
+  margin-top: 44px;
+  color: var(--blue);
+  font-size: 67px;
+  line-height: .96;
+  font-weight: 800;
+  letter-spacing: .7px;
+}
+
+.payment {
+  margin-top: 29px;
+  font-size: 20px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.qr-row {
+  margin-top: auto;
+  padding-top: 43px;
+  display: flex;
+  align-items: center;
+  gap: 47px;
+}
+
+/* Sem QR (qr-row fica display:none e sai do fluxo flex, entao seu
+   margin-top:auto nao tem efeito): joga a legenda pro fim do cartao no
+   lugar, pra nao deixar o mesmo vao em branco. */
+.offer-card.no-qr .qr-caption {
+  margin-top: auto;
+  padding-top: 23px;
+}
+
+.qr-box {
+  width: 224px;
+  height: 224px;
+  flex: 0 0 224px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.qr-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.scan-image {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  flex: 0 0 130px;
+}
+
+.qr-caption {
+  margin-top: 23px;
+  font-size: 31px;
+  white-space: nowrap;
+}
+
+/* ==========================
+   TELA CHEIA - PREVISAO DO TEMPO
+   (mesmo mecanismo da .oferta-area: cobre o video, fica abaixo dos
+   anchor-slots, sem tarjeta propria - usa a #promo-bar compartilhada)
+   ========================== */
+:root {
+  --wx-weather-blue: #3f8ef7;
+  --wx-red: #ed3344;
+  --wx-cool: #4c98f2;
+  --wx-line: #e7e9ed;
+}
+
+.wx-area {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  background:
+    radial-gradient(650px 500px at 100% 5%, rgba(105, 177, 255, .16), transparent 72%),
+    radial-gradient(650px 500px at 0% 100%, rgba(145, 220, 185, .10), transparent 72%),
+    linear-gradient(135deg, #f3f4f5 0%, #f9f9fa 52%, #eef2f5 100%);
+}
+
+.wx-area.active {
+  display: block;
+}
+
+/* Ao contrario da oferta, a tela de clima e' standalone: some com a pilula
+   de horario/clima e a tarjeta compartilhadas enquanto esta ativa (ver
+   classe "wx-active" alternada em #screen por modules/weather-screen.js). */
+#screen.wx-active .anchor-slot {
+  display: none;
+}
+
+/* !important: promo-bar.js seta display inline (style.display) periodicamente
+   (render() roda a cada 30s), o que teria prioridade sobre uma regra normal
+   de stylesheet e faria a tarjeta reaparecer por cima da tela de clima. */
+#screen.wx-active #promo-bar {
+  display: none !important;
+}
+
+.wx-content {
+  position: absolute;
+  inset: 0;
+  /* topo em 173px para nao ficar embaixo dos widgets fixos do anchor-slot
+     top-* (mesma logica/valor usado pelo .hero da oferta); esquerda/direita
+     em 44px para alinhar com a tarjeta e o hero das outras telas. */
+  padding: 173px 44px 0;
+}
+
+.wx-title {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -1.8px;
+  line-height: 1;
+  color: var(--blue);
+}
+
+.wx-subtitle {
+  margin-top: 16px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #5d6065;
+  letter-spacing: -.4px;
+}
+
+.wx-grid {
+  display: grid;
+  grid-template-columns: 1.94fr .94fr .94fr;
+  gap: 28px;
+  /* 44px (nao os 70px do prototipo original) para o grid caber entre o
+     titulo/subtitulo e a tarjeta compartilhada (bottom:64px) sem invadi-la. */
+  margin-top: 44px;
+  height: 590px;
+}
+
+.wx-card { overflow: hidden; }
+
+/* HOJE */
+.wx-today { display: grid; grid-template-rows: 1fr 150px; }
+.wx-today-main { padding: 26px 34px 18px; display: grid; grid-template-columns: 305px 1fr; gap: 34px; min-height: 0; }
+.wx-day-head { font-size: 34px; font-weight: 800; line-height: 1; }
+.wx-day-date { margin-top: 10px; font-size: 22px; color: #777b80; }
+.wx-big-condition { margin-top: 20px; display: flex; align-items: center; justify-content: center; height: 220px; }
+.wx-icon-big { width: 260px; height: 190px; }
+.wx-today-right { padding-top: 45px; display: flex; flex-direction: column; min-width: 0; }
+.wx-condition-title { font-size: 30px; font-weight: 800; letter-spacing: -.4px; }
+.wx-separator { height: 6px; border-radius: 6px; background: var(--wx-line); margin: 18px 0; }
+.wx-temp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 42px; }
+.wx-temp-item { display: flex; align-items: center; gap: 14px; }
+.wx-thermo-icon { width: 42px; height: 74px; flex: 0 0 42px; }
+.wx-temp-label { font-size: 21px; color: #4e5358; margin-bottom: 3px; }
+.wx-temp-value { font-size: 34px; font-weight: 800; }
+.wx-minor-metrics { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 18px; border-top: 1px solid var(--wx-line); padding-top: 14px; margin-top: 18px; }
+.wx-minor { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wx-minor svg { width: 45px; height: 45px; flex: 0 0 45px; }
+.wx-minor-name { font-size: 19px; color: #4d5156; }
+.wx-minor-value { font-size: 24px; font-weight: 800; margin-top: 2px; white-space: nowrap; }
+.wx-sun-row { margin-top: auto; border-top: 1px solid var(--wx-line); padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.wx-sun-item { display: flex; align-items: center; gap: 13px; }
+.wx-sun-item svg { width: 52px; height: 52px; flex: 0 0 52px; }
+.wx-sun-name { font-size: 18px; color: #565b60; }
+.wx-sun-time { font-size: 24px; font-weight: 800; margin-top: 3px; }
+
+.wx-hourly { border-top: 1px solid var(--wx-line); display: grid; grid-template-columns: repeat(4, 1fr); padding: 12px 16px 10px; }
+.wx-hour { display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid var(--wx-line); }
+.wx-hour:last-child { border-right: 0; }
+.wx-hour-time { font-size: 19px; color: #555a5f; margin-bottom: 4px; }
+.wx-hour svg { width: 70px; height: 56px; }
+.wx-hour-temp { font-size: 25px; font-weight: 800; margin-top: 3px; }
+
+/* cards dos proximos dias */
+.wx-next-day { padding: 25px 24px 22px; display: flex; flex-direction: column; }
+.wx-next-title { font-size: 30px; font-weight: 800; line-height: 1; }
+.wx-next-date { margin-top: 10px; font-size: 21px; color: #777b80; }
+.wx-next-icon-wrap { height: 138px; display: grid; place-items: center; margin-top: 8px; }
+.wx-next-icon-wrap svg { width: 130px; height: 105px; }
+.wx-next-condition { font-size: 23px; font-weight: 800; text-align: center; min-height: 50px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+.wx-small-separator { height: 6px; background: var(--wx-line); border-radius: 4px; margin: 7px 0 16px; }
+.wx-next-temps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wx-small-temp { display: flex; align-items: center; gap: 7px; }
+.wx-small-temp .wx-thermo-icon { width: 31px; height: 58px; flex: 0 0 31px; }
+.wx-small-temp .wx-temp-label { font-size: 17px; }
+.wx-small-temp .wx-temp-value { font-size: 29px; }
+.wx-next-rain { border-top: 1px solid var(--wx-line); border-bottom: 1px solid var(--wx-line); padding: 12px 0; margin: 14px 0; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.wx-next-rain svg { width: 54px; height: 46px; }
+.wx-next-rain-label { font-size: 18px; color: #555a5f; }
+.wx-next-rain-value { font-size: 25px; font-weight: 800; }
+.wx-next-sun { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+.wx-next-sun .wx-sun-item { gap: 8px; }
+.wx-next-sun .wx-sun-item svg { width: 42px; height: 42px; flex-basis: 42px; }
+.wx-next-sun .wx-sun-name { display: none; }
+.wx-next-sun .wx-sun-time { font-size: 22px; margin: 0; }

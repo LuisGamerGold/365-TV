@@ -214,8 +214,16 @@ class SpotifyProvider extends MusicProvider {
       title: data.item.name,
       artist: data.item.artists.map((a) => a.name).join(', '),
       albumArt: data.item.album?.images?.[0]?.url || null,
-      isPlaying: data.is_playing
+      isPlaying: data.is_playing,
+      progressMs: data.progress_ms ?? 0,
+      durationMs: data.item.duration_ms ?? 0
     };
+  }
+
+  async seek(positionMs) {
+    await this._api('PUT', '/me/player/seek', {
+      query: { position_ms: Math.round(positionMs), device_id: this._deviceId() }
+    });
   }
 }
 

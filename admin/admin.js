@@ -12,6 +12,21 @@ async function api(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// ---------- Abas ----------
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+  document.querySelectorAll('.tab-pane').forEach((pane) => pane.classList.toggle('active', pane.id === `pane-${tab}`));
+  localStorage.setItem('365tv-admin-tab', tab);
+}
+
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+const savedTab = localStorage.getItem('365tv-admin-tab');
+if (savedTab && document.getElementById(`pane-${savedTab}`)) switchTab(savedTab);
+
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await api('/admin/api/logout', { method: 'POST' });
   window.location.href = '/admin/login.html';
@@ -35,14 +50,34 @@ setInterval(refreshStatus, 15000);
 
 function videoListItem(item) {
   const li = document.createElement('li');
+  const mediaUrl = `/media/videos/${item.filename}`;
+  const thumb = item.type === 'image'
+    ? `<img class="thumb-small" src="${mediaUrl}" alt="${item.title}" />`
+    : `<video class="thumb-small" src="${mediaUrl}" muted preload="metadata"></video>`;
+  const fullPreview = item.type === 'image'
+    ? `<img class="video-preview" src="${mediaUrl}" alt="${item.title}" />`
+    : `<video class="video-preview" src="${mediaUrl}" controls preload="metadata"></video>`;
+
   li.innerHTML = `
-    <span class="title">${item.title} ${item.type === 'image' ? `(${item.durationSeconds}s)` : ''}</span>
-    <label><input type="checkbox" ${item.active ? 'checked' : ''} data-action="active" /> ativo</label>
-    ${item.type === 'video' ? `<label><input type="checkbox" ${item.loop ? 'checked' : ''} data-action="loop" /> repetir</label>` : ''}
-    <button data-action="up">↑</button>
-    <button data-action="down">↓</button>
-    <button data-action="delete" class="danger">Excluir</button>
+    <div class="video-item-controls">
+      ${thumb}
+      <span class="title">${item.title} ${item.type === 'image' ? `(${item.durationSeconds}s)` : ''}</span>
+      <label><input type="checkbox" ${item.active ? 'checked' : ''} data-action="active" /> ativo</label>
+      ${item.type === 'video' ? `<label><input type="checkbox" ${item.loop ? 'checked' : ''} data-action="loop" /> repetir</label>` : ''}
+      <button type="button" data-action="view">Visualizar</button>
+      <button data-action="up">↑</button>
+      <button data-action="down">↓</button>
+      <button data-action="delete" class="danger">Excluir</button>
+    </div>
+    <div class="expand-section" hidden></div>
   `;
+
+  const expandSection = li.querySelector('.expand-section');
+  li.querySelector('[data-action="view"]').addEventListener('click', (e) => {
+    expandSection.hidden = !expandSection.hidden;
+    if (!expandSection.hidden && !expandSection.innerHTML) expandSection.innerHTML = fullPreview;
+    e.target.textContent = expandSection.hidden ? 'Visualizar' : 'Ocultar';
+  });
 
   li.querySelector('[data-action="active"]').addEventListener('change', (e) => {
     api(`/admin/api/videos/${item.id}`, { method: 'PATCH', body: JSON.stringify({ active: e.target.checked }) });
@@ -102,6 +137,209 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
   }
 });
 
+// ---------- Oferta ----------
+
+const OFERTA_MAX_PHOTOS = 5;
+
+function ofertaPhotoUrl(item, filename) {
+  return `/media/oferta/${item.id}/${filename}`;
+}
+
+function ofertaPhotosBlock(item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'oferta-photos';
+
+  item.photos.forEach((filename, index) => {
+    const box = document.createElement('div');
+    box.className = 'oferta-photo';
+    box.innerHTML = `
+      <img src="${ofertaPhotoUrl(item, filename)}" alt="Foto ${index + 1}" />
+      <span class="oferta-photo-order">${index + 1}</span>
+      <div class="oferta-photo-actions">
+        <button type="button" data-action="photo-up" title="Mover para cima">↑</button>
+        <button type="button" data-action="photo-down" title="Mover para baixo">↓</button>
+        <button type="button" data-action="photo-remove" title="Remover">✕</button>
+      </div>
+    `;
+
+    box.querySelector('[data-action="photo-up"]').disabled = index === 0;
+    box.querySelector('[data-action="photo-down"]').disabled = index === item.photos.length - 1;
+    box.querySelector('[data-action="photo-up"]').addEventListener('click', () => reorderOfertaPhoto(item, index, -1));
+    box.querySelector('[data-action="photo-down"]').addEventListener('click', () => reorderOfertaPhoto(item, index, 1));
+    box.querySelector('[data-action="photo-remove"]').addEventListener('click', () => removeOfertaPhoto(item, filename));
+
+    wrap.appendChild(box);
+  });
+
+  if (item.photos.length < OFERTA_MAX_PHOTOS) {
+    const addLabel = document.createElement('label');
+    addLabel.className = 'oferta-photo-add';
+    addLabel.title = `Adicionar foto (${item.photos.length}/${OFERTA_MAX_PHOTOS})`;
+    addLabel.innerHTML = '+<input type="file" accept="image/*" multiple hidden />';
+    addLabel.querySelector('input').addEventListener('change', (e) => addOfertaPhotos(item, e.target.files));
+    wrap.appendChild(addLabel);
+  }
+
+  return wrap;
+}
+
+async function reorderOfertaPhoto(item, index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= item.photos.length) return;
+  const order = item.photos.slice();
+  [order[index], order[newIndex]] = [order[newIndex], order[index]];
+  await api(`/admin/api/oferta/${item.id}/photos/order`, { method: 'PATCH', body: JSON.stringify({ order }) });
+  loadOferta();
+}
+
+async function removeOfertaPhoto(item, filename) {
+  if (item.photos.length <= 1) {
+    alert('A oferta precisa de ao menos uma foto.');
+    return;
+  }
+  await api(`/admin/api/oferta/${item.id}/photos/${filename}`, { method: 'DELETE' });
+  loadOferta();
+}
+
+async function addOfertaPhotos(item, files) {
+  if (!files.length) return;
+  if (item.photos.length + files.length > OFERTA_MAX_PHOTOS) {
+    alert(`Máximo de ${OFERTA_MAX_PHOTOS} fotos por oferta (essa já tem ${item.photos.length}).`);
+    return;
+  }
+  const formData = new FormData();
+  Array.from(files).forEach((file) => formData.append('photos', file));
+  const res = await fetch(`/admin/api/oferta/${item.id}/photos`, { method: 'POST', body: formData });
+  if (res.ok) {
+    loadOferta();
+  } else {
+    alert('Falha ao adicionar fotos: ' + (await res.text()));
+  }
+}
+
+function ofertaEditForm(item) {
+  const form = document.createElement('div');
+  form.className = 'oferta-edit-form';
+  form.innerHTML = `
+    <label>Modelo <input type="text" data-field="model" value="${item.model || ''}" /></label>
+    <label>Ano <input type="number" data-field="year" value="${item.year ?? ''}" /></label>
+    <label>Km <input type="number" data-field="km" value="${item.km ?? ''}" /></label>
+    <label>Preço (R$) <input type="number" step="0.01" data-field="price" value="${item.price ?? ''}" /></label>
+    <label>Condições de financiamento <input type="text" data-field="financingNote" value="${item.financingNote || ''}" /></label>
+    <label>Link do anúncio (QR code) <input type="url" data-field="qrUrl" value="${item.qrUrl || ''}" /></label>
+    <div class="button-row">
+      <button type="button" data-action="save">Salvar dados</button>
+    </div>
+  `;
+
+  form.querySelector('[data-action="save"]').addEventListener('click', async () => {
+    const body = {};
+    form.querySelectorAll('[data-field]').forEach((input) => { body[input.dataset.field] = input.value; });
+    await api(`/admin/api/oferta/${item.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    loadOferta();
+  });
+
+  return form;
+}
+
+function ofertaListItem(item) {
+  const li = document.createElement('li');
+  const priceLabel = item.price ? `R$ ${Number(item.price).toLocaleString('pt-BR')}` : 'sem preço';
+  const coverPhoto = item.photos[0];
+
+  const header = document.createElement('div');
+  header.className = 'oferta-item-header';
+  header.innerHTML = `
+    ${coverPhoto ? `<img class="thumb-small" src="${ofertaPhotoUrl(item, coverPhoto)}" alt="${item.model || ''}" />` : '<div class="thumb-small"></div>'}
+    <span class="title">${item.model || '(sem modelo)'} — ${priceLabel}</span>
+    <label><input type="checkbox" ${item.active ? 'checked' : ''} data-action="active" /> ativa</label>
+    <button type="button" data-action="view">Visualizar</button>
+    <button type="button" data-action="delete" class="danger">Excluir</button>
+  `;
+
+  const expandSection = document.createElement('div');
+  expandSection.className = 'expand-section';
+  expandSection.hidden = true;
+
+  const viewBtn = header.querySelector('[data-action="view"]');
+  viewBtn.addEventListener('click', () => {
+    expandSection.hidden = !expandSection.hidden;
+    if (!expandSection.hidden && !expandSection.childElementCount) {
+      expandSection.appendChild(ofertaEditForm(item));
+      const photosLabel = document.createElement('p');
+      photosLabel.className = 'subtitle';
+      photosLabel.style.margin = '8px 0 4px';
+      photosLabel.textContent = 'Fotos (arraste a ordem com as setas)';
+      expandSection.appendChild(photosLabel);
+      expandSection.appendChild(ofertaPhotosBlock(item));
+    }
+    viewBtn.textContent = expandSection.hidden ? 'Visualizar' : 'Ocultar';
+  });
+
+  header.querySelector('[data-action="active"]').addEventListener('change', (e) => {
+    api(`/admin/api/oferta/${item.id}`, { method: 'PATCH', body: JSON.stringify({ active: e.target.checked }) });
+  });
+  header.querySelector('[data-action="delete"]').addEventListener('click', () => {
+    api(`/admin/api/oferta/${item.id}`, { method: 'DELETE' }).then(loadOferta);
+  });
+
+  li.appendChild(header);
+  li.appendChild(expandSection);
+
+  return li;
+}
+
+async function loadOferta() {
+  const data = await api('/admin/api/oferta');
+  document.getElementById('oferta-enabled').checked = Boolean(data.enabled);
+  document.getElementById('oferta-chance').value = Math.round((data.chance || 0) * 100);
+  document.getElementById('oferta-seconds').value = data.secondsPerPhoto || 5;
+
+  const list = document.getElementById('oferta-list');
+  list.innerHTML = '';
+  (data.items || []).forEach((item) => list.appendChild(ofertaListItem(item)));
+}
+
+document.getElementById('oferta-config-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await api('/admin/api/oferta/config', {
+    method: 'PUT',
+    body: JSON.stringify({
+      enabled: document.getElementById('oferta-enabled').checked,
+      chance: Number(document.getElementById('oferta-chance').value) / 100,
+      secondsPerPhoto: Number(document.getElementById('oferta-seconds').value)
+    })
+  });
+  alert('Configuração de oferta salva!');
+});
+
+document.getElementById('oferta-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const files = document.getElementById('oferta-photos').files;
+  if (!files.length) return;
+  if (files.length > OFERTA_MAX_PHOTOS) {
+    alert(`Máximo de ${OFERTA_MAX_PHOTOS} fotos por oferta.`);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('model', document.getElementById('oferta-model').value);
+  formData.append('year', document.getElementById('oferta-year').value);
+  formData.append('km', document.getElementById('oferta-km').value);
+  formData.append('price', document.getElementById('oferta-price').value);
+  formData.append('financingNote', document.getElementById('oferta-financing').value);
+  formData.append('qrUrl', document.getElementById('oferta-qrurl').value);
+  Array.from(files).forEach((file) => formData.append('photos', file));
+
+  const res = await fetch('/admin/api/oferta', { method: 'POST', body: formData });
+  if (res.ok) {
+    e.target.reset();
+    loadOferta();
+  } else {
+    alert('Falha ao adicionar oferta: ' + (await res.text()));
+  }
+});
+
 // ---------- Promo ----------
 
 function toLocalInputValue(iso) {
@@ -113,9 +351,8 @@ function toLocalInputValue(iso) {
 
 async function loadPromo() {
   const promo = await api('/admin/api/promo');
-  document.getElementById('promo-text').value = promo.text || '';
+  document.getElementById('promo-text').value = (promo.messages || []).join('\n');
   document.getElementById('promo-active').checked = Boolean(promo.active);
-  document.getElementById('promo-animation').value = promo.animation || 'none';
   document.getElementById('promo-start').value = toLocalInputValue(promo.startAt);
   document.getElementById('promo-end').value = toLocalInputValue(promo.endAt);
   document.getElementById('promo-position').value = promo.position || 'bottom';
@@ -125,12 +362,15 @@ document.getElementById('promo-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const startVal = document.getElementById('promo-start').value;
   const endVal = document.getElementById('promo-end').value;
+  const messages = document.getElementById('promo-text').value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
   await api('/admin/api/promo', {
     method: 'PUT',
     body: JSON.stringify({
-      text: document.getElementById('promo-text').value,
+      messages,
       active: document.getElementById('promo-active').checked,
-      animation: document.getElementById('promo-animation').value,
       position: document.getElementById('promo-position').value,
       startAt: startVal ? new Date(startVal).toISOString() : null,
       endAt: endVal ? new Date(endVal).toISOString() : null
@@ -145,11 +385,11 @@ async function loadWidgets() {
   const widgets = await api('/admin/api/widgets');
   document.getElementById('w-clock-enabled').checked = widgets.clock.enabled;
   document.getElementById('w-clock-format').value = widgets.clock.format;
-  document.getElementById('w-clock-position').value = widgets.clock.position || 'top-right';
   document.getElementById('w-weather-enabled').checked = widgets.weather.enabled;
   document.getElementById('w-weather-city').value = widgets.weather.city || '';
   document.getElementById('w-weather-apikey').value = widgets.weather.apiKey || '';
-  document.getElementById('w-weather-position').value = widgets.weather.position || 'top-center';
+  document.getElementById('w-infopill-position').value = widgets.infoPill.position || 'top-left';
+  document.getElementById('w-infopill-cycle').value = widgets.infoPill.cycleSeconds || 8;
   document.getElementById('w-logo-enabled').checked = widgets.logo.enabled;
   document.getElementById('w-logo-position').value = widgets.logo.position || 'top-left';
   document.getElementById('w-logo-size').value = widgets.logo.size || 'medium';
@@ -164,14 +404,16 @@ document.getElementById('widgets-form').addEventListener('submit', async (e) => 
     body: JSON.stringify({
       clock: {
         enabled: document.getElementById('w-clock-enabled').checked,
-        format: document.getElementById('w-clock-format').value,
-        position: document.getElementById('w-clock-position').value
+        format: document.getElementById('w-clock-format').value
       },
       weather: {
         enabled: document.getElementById('w-weather-enabled').checked,
         city: document.getElementById('w-weather-city').value,
-        apiKey: document.getElementById('w-weather-apikey').value,
-        position: document.getElementById('w-weather-position').value
+        apiKey: document.getElementById('w-weather-apikey').value
+      },
+      infoPill: {
+        position: document.getElementById('w-infopill-position').value,
+        cycleSeconds: Number(document.getElementById('w-infopill-cycle').value)
       },
       logo: {
         enabled: document.getElementById('w-logo-enabled').checked,
@@ -187,6 +429,28 @@ document.getElementById('widgets-form').addEventListener('submit', async (e) => 
   alert('Widgets salvos!');
 });
 
+// ---------- Tela cheia de previsão do tempo ----------
+
+async function loadWeatherScreen() {
+  const data = await api('/admin/api/weather-screen');
+  document.getElementById('ws-enabled').checked = Boolean(data.enabled);
+  document.getElementById('ws-chance').value = Math.round((data.chance || 0) * 100);
+  document.getElementById('ws-duration').value = data.durationSeconds || 25;
+}
+
+document.getElementById('weather-screen-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await api('/admin/api/weather-screen', {
+    method: 'PUT',
+    body: JSON.stringify({
+      enabled: document.getElementById('ws-enabled').checked,
+      chance: Number(document.getElementById('ws-chance').value) / 100,
+      durationSeconds: Number(document.getElementById('ws-duration').value)
+    })
+  });
+  alert('Configuração salva!');
+});
+
 // ---------- Spotify / Musica ----------
 
 async function loadMusic() {
@@ -199,12 +463,102 @@ async function loadMusic() {
     statusEl.textContent = `Conectado${music.spotify.deviceName ? ' — dispositivo: ' + music.spotify.deviceName : ' — nenhum dispositivo selecionado'}`;
     loadDevices();
     loadPlaylists();
+    startNowPlayingPolling();
   } else {
     statusEl.textContent = 'Spotify nao conectado';
     document.getElementById('spotify-devices').innerHTML = '';
     document.getElementById('spotify-playlist-select').innerHTML = '';
+    stopNowPlayingPolling();
   }
 }
+
+// ---------- Now playing ----------
+
+let nowPlayingTimer = null;
+let nowPlayingTrackId = null; // evita "piscar" a barra reiniciando a cada poll na mesma faixa
+let nowPlayingLocalProgress = 0;
+let nowPlayingLocalUpdatedAt = 0;
+
+function formatMs(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function renderNowPlaying(track) {
+  const box = document.getElementById('now-playing');
+  if (!track) {
+    box.hidden = true;
+    nowPlayingTrackId = null;
+    return;
+  }
+
+  box.hidden = false;
+  document.getElementById('np-title').textContent = track.title;
+  document.getElementById('np-artist').textContent = track.artist;
+  const cover = document.getElementById('np-cover');
+  if (track.albumArt) cover.src = track.albumArt; else cover.removeAttribute('src');
+
+  nowPlayingTrackId = `${track.title}::${track.artist}`;
+  nowPlayingLocalProgress = track.progressMs || 0;
+  nowPlayingLocalUpdatedAt = Date.now();
+
+  const duration = track.durationMs || 0;
+  document.getElementById('np-duration').textContent = formatMs(duration);
+  updateNowPlayingFill(nowPlayingLocalProgress, duration, track.isPlaying);
+}
+
+function updateNowPlayingFill(progressMs, durationMs, isPlaying) {
+  document.getElementById('np-elapsed').textContent = formatMs(progressMs);
+  const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
+  document.getElementById('np-progress-fill').style.width = `${pct}%`;
+  document.getElementById('np-progress-bar').dataset.duration = durationMs;
+  document.getElementById('np-progress-bar').dataset.playing = isPlaying ? '1' : '0';
+}
+
+async function refreshNowPlaying() {
+  try {
+    const track = await api('/admin/api/music/now-playing');
+    renderNowPlaying(track);
+  } catch {
+    renderNowPlaying(null);
+  }
+}
+
+function startNowPlayingPolling() {
+  if (nowPlayingTimer) return;
+  refreshNowPlaying();
+  nowPlayingTimer = setInterval(refreshNowPlaying, 3000);
+}
+
+function stopNowPlayingPolling() {
+  clearInterval(nowPlayingTimer);
+  nowPlayingTimer = null;
+  renderNowPlaying(null);
+}
+
+// avanca a barra localmente entre um poll e outro, sem esperar o Spotify
+setInterval(() => {
+  const bar = document.getElementById('np-progress-bar');
+  if (!nowPlayingTrackId || bar.dataset.playing !== '1') return;
+  const duration = Number(bar.dataset.duration) || 0;
+  const elapsed = nowPlayingLocalProgress + (Date.now() - nowPlayingLocalUpdatedAt);
+  updateNowPlayingFill(Math.min(elapsed, duration), duration, true);
+}, 500);
+
+document.getElementById('np-progress-bar').addEventListener('click', async (e) => {
+  const bar = e.currentTarget;
+  const duration = Number(bar.dataset.duration) || 0;
+  if (!duration) return;
+  const rect = bar.getBoundingClientRect();
+  const fraction = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  const positionMs = Math.round(fraction * duration);
+  updateNowPlayingFill(positionMs, duration, bar.dataset.playing === '1');
+  nowPlayingLocalProgress = positionMs;
+  nowPlayingLocalUpdatedAt = Date.now();
+  await api('/admin/api/music/seek', { method: 'PUT', body: JSON.stringify({ positionMs }) });
+});
 
 async function loadPlaylists() {
   const select = document.getElementById('spotify-playlist-select');
@@ -302,6 +656,8 @@ document.getElementById('password-form').addEventListener('submit', async (e) =>
 // ---------- Init ----------
 
 loadVideos();
+loadOferta();
 loadPromo();
 loadWidgets();
+loadWeatherScreen();
 loadMusic();

@@ -115,6 +115,15 @@ module.exports = function musicRouter(state) {
     }
   });
 
+  router.put('/seek', async (req, res) => {
+    try {
+      await provider.seek(Number(req.body?.positionMs) || 0);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(502).json({ error: err.message });
+    }
+  });
+
   router.get('/now-playing', async (req, res) => {
     try {
       res.json(await provider.getNowPlaying());

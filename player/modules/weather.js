@@ -1,15 +1,21 @@
 window.WeatherModule = (function () {
-  const el = document.getElementById('weather');
+  const cityEl = document.getElementById('weather-city');
+  const tempEl = document.getElementById('weather-temp');
+  const descEl = document.getElementById('weather-desc');
   const CACHE_KEY = '365tv-weather-cache';
-  let config = { enabled: true, city: '', apiKey: '', position: 'top-right' };
+  let config = { enabled: true, city: '', apiKey: '' };
   let timer = null;
 
   function render(data) {
     if (!data) {
-      el.textContent = '';
+      cityEl.textContent = '';
+      tempEl.textContent = '';
+      descEl.textContent = '';
       return;
     }
-    el.textContent = `${Math.round(data.temp)}°C • ${data.city}`;
+    cityEl.textContent = data.city;
+    tempEl.textContent = `${Math.round(data.temp)}°C`;
+    descEl.textContent = data.description || '';
   }
 
   function readCache() {
@@ -33,7 +39,11 @@ window.WeatherModule = (function () {
       const res = await fetch(url);
       if (!res.ok) throw new Error('resposta invalida');
       const json = await res.json();
-      const data = { temp: json.main.temp, city: json.name };
+      const data = {
+        temp: json.main.temp,
+        city: json.name,
+        description: json.weather?.[0]?.description || ''
+      };
       writeCache(data);
       render(data);
     } catch (err) {
@@ -44,8 +54,6 @@ window.WeatherModule = (function () {
 
   function applyConfig(newConfig) {
     config = { ...config, ...newConfig };
-    el.style.display = config.enabled ? '' : 'none';
-    setAnchorPosition(el, config.position);
     if (!config.enabled) return;
     render(readCache());
     fetchWeather();

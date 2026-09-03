@@ -1,6 +1,13 @@
+// Tarjeta inferior/superior: faixa de mensagens rolando continuamente (estilo
+// "letreiro"), com um icone fixo a esquerda. E' o unico card fixo nessa
+// posicao da tela - fica sempre por cima (z-index 9), tanto no video quanto
+// na oferta, entao nao existe mais um segundo card de mensagem so da oferta.
 window.PromoBarModule = (function () {
   const bar = document.getElementById('promo-bar');
-  const textEl = document.getElementById('promo-text');
+  const track = document.getElementById('ticker-track');
+  const PIXELS_PER_SECOND = 55;
+  const MIN_DURATION_SECONDS = 10;
+
   let promo = null;
 
   function isWithinWindow(p) {
@@ -10,16 +17,51 @@ window.PromoBarModule = (function () {
     return true;
   }
 
+  function buildGroup(messages) {
+    const group = document.createElement('div');
+    group.className = 'ticker-group';
+    messages.forEach((message) => {
+      const span = document.createElement('span');
+      span.textContent = message;
+      group.appendChild(span);
+
+      const dot = document.createElement('span');
+      dot.className = 'ticker-dot';
+      group.appendChild(dot);
+    });
+    return group;
+  }
+
+  function renderTrack(messages) {
+    track.innerHTML = '';
+    // duplica o grupo para o loop ficar continuo (quando o primeiro sai da
+    // tela, o segundo ja esta encostado nele)
+    track.appendChild(buildGroup(messages));
+    track.appendChild(buildGroup(messages));
+
+    requestAnimationFrame(() => {
+      const width = track.children[0].getBoundingClientRect().width;
+      track.style.setProperty('--ticker-group-width', `${width}px`);
+      const duration = Math.max(MIN_DURATION_SECONDS, width / PIXELS_PER_SECOND);
+      track.style.animationDuration = `${duration}s`;
+      // reinicia a animacao do zero para nao "pular" apos remontar o conteudo
+      track.style.animationName = 'none';
+      // eslint-disable-next-line no-unused-expressions
+      track.offsetHeight;
+      track.style.animationName = 'tickerScroll';
+    });
+  }
+
   function render() {
-    if (!promo || !promo.active || !promo.text || !isWithinWindow(promo)) {
+    const messages = promo && Array.isArray(promo.messages) ? promo.messages : [];
+    if (!promo || !promo.active || messages.length === 0 || !isWithinWindow(promo)) {
       bar.style.display = 'none';
       return;
     }
-    textEl.textContent = promo.text;
-    bar.classList.toggle('animate-slide', promo.animation === 'slide');
     bar.classList.toggle('pos-top', promo.position === 'top');
     bar.classList.toggle('pos-bottom', promo.position !== 'top');
     bar.style.display = 'flex';
+    renderTrack(messages);
   }
 
   function applyState(newPromo) {

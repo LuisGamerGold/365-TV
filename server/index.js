@@ -68,12 +68,14 @@ function createServer() {
   app.use('/admin/api/widgets', requireAuth, require('./routes/widgets')(state));
   const musicRouter = require('./routes/music')(state);
   app.use('/admin/api/music', requireAuth, musicRouter);
+  app.use('/admin/api/oferta', requireAuth, require('./routes/oferta')(state));
+  app.use('/admin/api/weather-screen', requireAuth, require('./routes/weather-screen')(state));
   app.use('/admin', requireAuth, express.static(ADMIN_DIR));
 
   app.get('/api/status', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
   // Repassa mudancas de estado para a tela da TV em tempo real.
-  for (const section of ['videos', 'promo', 'widgets', 'music']) {
+  for (const section of ['videos', 'promo', 'widgets', 'music', 'oferta', 'weatherScreen']) {
     state.on(section, (payload) => io.emit(`${section}:updated`, payload));
   }
 
@@ -82,6 +84,8 @@ function createServer() {
     socket.emit('promo:updated', state.get('promo'));
     socket.emit('widgets:updated', state.get('widgets'));
     socket.emit('music:updated', state.get('music'));
+    socket.emit('oferta:updated', state.get('oferta'));
+    socket.emit('weatherScreen:updated', state.get('weatherScreen'));
   });
 
   // Polling do "now playing" fica no servidor (dono do token do Spotify);

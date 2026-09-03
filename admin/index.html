@@ -2,191 +2,282 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>365 TV — Painel</title>
 <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>365 TV — Painel</h1>
-    <div class="topbar-actions">
-      <span id="status-badge" class="badge">verificando...</span>
-      <button id="logout-btn" class="link-btn">Sair</button>
+
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <div class="nav-outer">
+    <header class="topbar">
+      <h1>365 TV</h1>
+      <div class="topbar-actions">
+        <span id="status-badge" class="badge">verificando...</span>
+        <button id="logout-btn" class="link-btn">Sair</button>
+      </div>
+    </header>
+  </div>
+
+  <main class="wrapper">
+    <div class="page-header">
+      <h2 class="page-title">Painel</h2>
+      <nav class="tab-nav" id="tab-nav">
+        <button type="button" class="tab-btn active" data-tab="videos">Vídeos</button>
+        <button type="button" class="tab-btn" data-tab="oferta">Oferta</button>
+        <button type="button" class="tab-btn" data-tab="promo">Promoção</button>
+        <button type="button" class="tab-btn" data-tab="widgets">Widgets</button>
+        <button type="button" class="tab-btn" data-tab="musica">Música</button>
+        <button type="button" class="tab-btn" data-tab="config">Configurações</button>
+      </nav>
     </div>
-  </header>
 
-  <main class="grid">
-    <section class="card">
-      <h2>Playlist de vídeos</h2>
-      <form id="upload-form" class="upload-form">
-        <input type="file" id="upload-file" accept="video/*,image/*" required />
-        <input type="text" id="upload-title" placeholder="Título (opcional)" />
-        <input type="number" id="upload-duration" placeholder="Duração (seg) — só p/ imagem" min="1" />
-        <button type="submit">Adicionar</button>
-      </form>
-      <ul id="video-list" class="list"></ul>
-    </section>
+    <div class="tab-pane active" id="pane-videos">
+      <section class="card">
+        <h2>Playlist de vídeos</h2>
+        <form id="upload-form" class="upload-form">
+          <input type="file" id="upload-file" accept="video/*,image/*" required />
+          <input type="text" id="upload-title" placeholder="Título (opcional)" />
+          <input type="number" id="upload-duration" placeholder="Duração (seg) — só p/ imagem" min="1" />
+          <button type="submit">Adicionar</button>
+        </form>
+        <ul id="video-list" class="list video-list"></ul>
+      </section>
+    </div>
 
-    <section class="card">
-      <h2>Tarjeta de promoção</h2>
-      <form id="promo-form" class="stacked-form">
-        <label>Texto
-          <input type="text" id="promo-text" />
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" id="promo-active" /> Ativa
-        </label>
-        <label>Animação
-          <select id="promo-animation">
-            <option value="none">Nenhuma</option>
-            <option value="slide">Deslizar</option>
-          </select>
-        </label>
-        <label>Início
-          <input type="datetime-local" id="promo-start" />
-        </label>
-        <label>Fim
-          <input type="datetime-local" id="promo-end" />
-        </label>
-        <label>Posição na tela
-          <select id="promo-position">
-            <option value="bottom">Embaixo</option>
-            <option value="top">Em cima</option>
-          </select>
-        </label>
-        <button type="submit">Salvar promoção</button>
-      </form>
-    </section>
+    <div class="tab-pane" id="pane-oferta">
+      <section class="card">
+        <h2>Oferta (moto em destaque)</h2>
+        <p class="subtitle">Aparece em tela cheia, de forma aleatória, entre um vídeo e outro.</p>
+        <form id="oferta-config-form" class="stacked-form">
+          <label class="checkbox">
+            <input type="checkbox" id="oferta-enabled" /> Ativar tela de oferta
+          </label>
+          <label>Chance de aparecer após cada vídeo (%)
+            <input type="number" id="oferta-chance" min="0" max="100" />
+          </label>
+          <label>Segundos por foto
+            <input type="number" id="oferta-seconds" min="2" />
+          </label>
+          <button type="submit">Salvar configuração</button>
+        </form>
 
-    <section class="card">
-      <h2>Widgets</h2>
-      <form id="widgets-form" class="stacked-form">
-        <fieldset>
-          <legend>Relógio</legend>
-          <label class="checkbox"><input type="checkbox" id="w-clock-enabled" /> Exibir</label>
-          <label>Formato
-            <select id="w-clock-format">
-              <option value="24h">24h</option>
-              <option value="12h">12h</option>
+        <h3>Adicionar oferta</h3>
+        <form id="oferta-form" class="stacked-form">
+          <label>Modelo
+            <input type="text" id="oferta-model" required />
+          </label>
+          <label>Ano
+            <input type="number" id="oferta-year" />
+          </label>
+          <label>Km
+            <input type="number" id="oferta-km" />
+          </label>
+          <label>Preço (R$)
+            <input type="number" id="oferta-price" step="0.01" />
+          </label>
+          <label>Condições de financiamento
+            <input type="text" id="oferta-financing" placeholder="Cartão até 24x - Financiamento sujeito à análise" />
+          </label>
+          <label>Link do anúncio (gera o QR code)
+            <input type="url" id="oferta-qrurl" placeholder="https://..." />
+          </label>
+          <label>Fotos (máx. 5, pode selecionar várias)
+            <input type="file" id="oferta-photos" accept="image/*" multiple required />
+          </label>
+          <button type="submit">Adicionar oferta</button>
+        </form>
+        <ul id="oferta-list" class="list oferta-list"></ul>
+      </section>
+    </div>
+
+    <div class="tab-pane" id="pane-promo">
+      <section class="card">
+        <h2>Tarjeta de promoção</h2>
+        <p class="subtitle">Faixa inferior (ou superior) rolando continuamente sobre o vídeo. Cada linha vira uma mensagem separada por um ponto.</p>
+        <form id="promo-form" class="stacked-form">
+          <label>Mensagens (uma por linha)
+            <textarea id="promo-text" rows="4" placeholder="Promoções da semana&#10;Confira motos em estoque&#10;Condições especiais"></textarea>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="promo-active" /> Ativa
+          </label>
+          <label>Início
+            <input type="datetime-local" id="promo-start" />
+          </label>
+          <label>Fim
+            <input type="datetime-local" id="promo-end" />
+          </label>
+          <label>Posição na tela
+            <select id="promo-position">
+              <option value="bottom">Embaixo</option>
+              <option value="top">Em cima</option>
             </select>
           </label>
-          <label>Posição
-            <select id="w-clock-position">
-              <option value="top-left">Cima esquerda</option>
-              <option value="top-center">Cima centro</option>
-              <option value="top-right">Cima direita</option>
-              <option value="bottom-left">Baixo esquerda</option>
-              <option value="bottom-center">Baixo centro</option>
-              <option value="bottom-right">Baixo direita</option>
-            </select>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Clima</legend>
-          <label class="checkbox"><input type="checkbox" id="w-weather-enabled" /> Exibir</label>
-          <label>Cidade (ex: Sarandi,BR)
-            <input type="text" id="w-weather-city" />
-          </label>
-          <label>API key (OpenWeatherMap)
-            <input type="text" id="w-weather-apikey" />
-          </label>
-          <label>Posição
-            <select id="w-weather-position">
-              <option value="top-left">Cima esquerda</option>
-              <option value="top-center">Cima centro</option>
-              <option value="top-right">Cima direita</option>
-              <option value="bottom-left">Baixo esquerda</option>
-              <option value="bottom-center">Baixo centro</option>
-              <option value="bottom-right">Baixo direita</option>
-            </select>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Logo</legend>
-          <label class="checkbox"><input type="checkbox" id="w-logo-enabled" /> Exibir</label>
-          <label>Posição
-            <select id="w-logo-position">
-              <option value="top-left">Cima esquerda</option>
-              <option value="top-center">Cima centro</option>
-              <option value="top-right">Cima direita</option>
-              <option value="bottom-left">Baixo esquerda</option>
-              <option value="bottom-center">Baixo centro</option>
-              <option value="bottom-right">Baixo direita</option>
-            </select>
-          </label>
-          <label>Tamanho
-            <select id="w-logo-size">
-              <option value="small">Pequeno</option>
-              <option value="medium">Médio</option>
-              <option value="large">Grande</option>
-            </select>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Música (now playing)</legend>
-          <label class="checkbox"><input type="checkbox" id="w-music-enabled" /> Exibir</label>
-          <label>Posição
-            <select id="w-music-position">
-              <option value="top-left">Cima esquerda</option>
-              <option value="top-center">Cima centro</option>
-              <option value="top-right">Cima direita</option>
-              <option value="bottom-left">Baixo esquerda</option>
-              <option value="bottom-center">Baixo centro</option>
-              <option value="bottom-right">Baixo direita</option>
-            </select>
-          </label>
-        </fieldset>
-        <button type="submit">Salvar widgets</button>
-      </form>
-    </section>
+          <button type="submit">Salvar promoção</button>
+        </form>
+      </section>
+    </div>
 
-    <section class="card">
-      <h2>Música (Spotify)</h2>
-      <p id="spotify-status" class="subtitle">verificando...</p>
+    <div class="tab-pane" id="pane-widgets">
+      <section class="card">
+        <h2>Widgets</h2>
+        <form id="widgets-form" class="stacked-form">
+          <fieldset>
+            <legend>Horário &amp; Clima</legend>
+            <p class="subtitle">Aparecem juntos, no mesmo lugar da tela, alternando um e outro. Se só um dos dois estiver marcado, ele fica fixo (sem alternar).</p>
+            <label class="checkbox"><input type="checkbox" id="w-clock-enabled" /> Exibir horário</label>
+            <label>Formato do horário
+              <select id="w-clock-format">
+                <option value="24h">24h</option>
+                <option value="12h">12h</option>
+              </select>
+            </label>
+            <label class="checkbox"><input type="checkbox" id="w-weather-enabled" /> Exibir clima</label>
+            <label>Cidade (ex: Sarandi,BR)
+              <input type="text" id="w-weather-city" />
+            </label>
+            <label>API key (OpenWeatherMap)
+              <input type="text" id="w-weather-apikey" />
+            </label>
+            <label>Posição na tela
+              <select id="w-infopill-position">
+                <option value="top-left">Cima esquerda</option>
+                <option value="top-center">Cima centro</option>
+                <option value="top-right">Cima direita</option>
+                <option value="bottom-left">Baixo esquerda</option>
+                <option value="bottom-center">Baixo centro</option>
+                <option value="bottom-right">Baixo direita</option>
+              </select>
+            </label>
+            <label>Segundos entre a troca
+              <input type="number" id="w-infopill-cycle" min="3" />
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Logo</legend>
+            <label class="checkbox"><input type="checkbox" id="w-logo-enabled" /> Exibir</label>
+            <label>Posição
+              <select id="w-logo-position">
+                <option value="top-left">Cima esquerda</option>
+                <option value="top-center">Cima centro</option>
+                <option value="top-right">Cima direita</option>
+                <option value="bottom-left">Baixo esquerda</option>
+                <option value="bottom-center">Baixo centro</option>
+                <option value="bottom-right">Baixo direita</option>
+              </select>
+            </label>
+            <label>Tamanho
+              <select id="w-logo-size">
+                <option value="small">Pequeno</option>
+                <option value="medium">Médio</option>
+                <option value="large">Grande</option>
+              </select>
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Música (now playing)</legend>
+            <label class="checkbox"><input type="checkbox" id="w-music-enabled" /> Exibir</label>
+            <label>Posição
+              <select id="w-music-position">
+                <option value="top-left">Cima esquerda</option>
+                <option value="top-center">Cima centro</option>
+                <option value="top-right">Cima direita</option>
+                <option value="bottom-left">Baixo esquerda</option>
+                <option value="bottom-center">Baixo centro</option>
+                <option value="bottom-right">Baixo direita</option>
+              </select>
+            </label>
+          </fieldset>
+          <button type="submit">Salvar widgets</button>
+        </form>
+      </section>
 
-      <form id="spotify-config-form" class="stacked-form">
-        <label>Client ID do app Spotify
-          <input type="text" id="spotify-client-id" />
+      <section class="card">
+        <h2>Tela cheia — Previsão do tempo</h2>
+        <p class="subtitle">Aparece em tela cheia, de forma aleatória, entre um vídeo e outro (usa a cidade/API key configuradas acima).</p>
+        <form id="weather-screen-form" class="stacked-form">
+          <label class="checkbox">
+            <input type="checkbox" id="ws-enabled" /> Ativar tela de previsão
+          </label>
+          <label>Chance de aparecer após cada vídeo (%)
+            <input type="number" id="ws-chance" min="0" max="100" />
+          </label>
+          <label>Duração na tela (segundos)
+            <input type="number" id="ws-duration" min="5" />
+          </label>
+          <button type="submit">Salvar configuração</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="tab-pane" id="pane-musica">
+      <section class="card">
+        <h2>Música (Spotify)</h2>
+        <p id="spotify-status" class="subtitle">verificando...</p>
+
+        <form id="spotify-config-form" class="stacked-form">
+          <label>Client ID do app Spotify
+            <input type="text" id="spotify-client-id" />
+          </label>
+          <button type="submit">Salvar Client ID</button>
+        </form>
+
+        <div class="button-row">
+          <button id="spotify-connect-btn">Conectar Spotify</button>
+          <button id="spotify-disconnect-btn" class="danger">Desconectar</button>
+        </div>
+
+        <div id="spotify-devices"></div>
+
+        <h3>Playlist</h3>
+        <div class="button-row">
+          <select id="spotify-playlist-select"></select>
+          <button id="spotify-playlist-play">Tocar essa playlist</button>
+        </div>
+
+        <div id="now-playing" class="now-playing" hidden>
+          <img id="np-cover" class="np-cover" alt="" />
+          <div class="np-info">
+            <div id="np-title" class="np-title"></div>
+            <div id="np-artist" class="np-artist"></div>
+            <div class="np-progress-row">
+              <span id="np-elapsed" class="np-time">0:00</span>
+              <div id="np-progress-bar" class="np-progress-bar"><div id="np-progress-fill" class="np-progress-fill"></div></div>
+              <span id="np-duration" class="np-time">0:00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="music-prev">⏮</button>
+          <button id="music-play">▶</button>
+          <button id="music-pause">⏸</button>
+          <button id="music-next">⏭</button>
+        </div>
+        <label>Volume
+          <input type="range" id="music-volume" min="0" max="100" />
         </label>
-        <button type="submit">Salvar Client ID</button>
-      </form>
+      </section>
+    </div>
 
-      <div class="button-row">
-        <button id="spotify-connect-btn">Conectar Spotify</button>
-        <button id="spotify-disconnect-btn" class="danger">Desconectar</button>
-      </div>
-
-      <div id="spotify-devices"></div>
-
-      <h3>Playlist</h3>
-      <div class="button-row">
-        <select id="spotify-playlist-select"></select>
-        <button id="spotify-playlist-play">Tocar essa playlist</button>
-      </div>
-
-      <div class="button-row">
-        <button id="music-prev">⏮</button>
-        <button id="music-play">▶</button>
-        <button id="music-pause">⏸</button>
-        <button id="music-next">⏭</button>
-      </div>
-      <label>Volume
-        <input type="range" id="music-volume" min="0" max="100" />
-      </label>
-    </section>
-
-    <section class="card">
-      <h2>Senha do painel</h2>
-      <form id="password-form" class="stacked-form">
-        <label>Senha atual
-          <input type="password" id="current-password" required />
-        </label>
-        <label>Nova senha
-          <input type="password" id="new-password" required minlength="4" />
-        </label>
-        <button type="submit">Alterar senha</button>
-        <p id="password-message"></p>
-      </form>
-    </section>
+    <div class="tab-pane" id="pane-config">
+      <section class="card">
+        <h2>Senha do painel</h2>
+        <form id="password-form" class="stacked-form">
+          <label>Senha atual
+            <input type="password" id="current-password" required />
+          </label>
+          <label>Nova senha
+            <input type="password" id="new-password" required minlength="4" />
+          </label>
+          <button type="submit">Alterar senha</button>
+          <p id="password-message"></p>
+        </form>
+      </section>
+    </div>
   </main>
 
   <script src="admin.js"></script>

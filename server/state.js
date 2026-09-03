@@ -27,19 +27,18 @@ function defaultState() {
       playlist: []
     },
     promo: {
-      text: '',
-      highlight: false,
-      animation: 'none',
+      messages: [],
       active: false,
       position: 'bottom',
       startAt: null,
       endAt: null
     },
     widgets: {
-      clock: { enabled: true, position: 'top-right', format: '24h' },
-      weather: { enabled: true, city: 'Sarandi,BR', apiKey: '', position: 'top-center', lastKnown: null },
-      logo: { enabled: true, position: 'top-left', size: 'medium', opacity: 1 },
-      music: { enabled: true, position: 'bottom-right' }
+      clock: { enabled: true, format: '24h' },
+      weather: { enabled: true, city: 'Sarandi,BR', apiKey: '', lastKnown: null },
+      infoPill: { position: 'top-left', cycleSeconds: 8 },
+      logo: { enabled: true, position: 'top-right', size: 'medium', opacity: 1 },
+      music: { enabled: true, position: 'top-left' }
     },
     music: {
       provider: 'spotify',
@@ -50,6 +49,17 @@ function defaultState() {
         deviceName: null,
         volume: 70
       }
+    },
+    oferta: {
+      enabled: true,
+      chance: 0.3,
+      secondsPerPhoto: 5,
+      items: []
+    },
+    weatherScreen: {
+      enabled: false,
+      chance: 0.2,
+      durationSeconds: 25
     }
   };
 }
@@ -68,7 +78,32 @@ class StateStore extends EventEmitter {
       return initial;
     }
     try {
-      return JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      const loaded = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      const defaults = defaultState();
+      let missingSection = false;
+      for (const key of Object.keys(defaults)) {
+        if (!(key in loaded)) {
+          loaded[key] = defaults[key];
+          missingSection = true;
+        }
+      }
+      // migracao: instalacoes antigas tem widgets.clock/weather mas nao tem
+      // widgets.infoPill (pilula unica que alterna horario/clima)
+      if (loaded.widgets && !loaded.widgets.infoPill) {
+        loaded.widgets.infoPill = defaults.widgets.infoPill;
+        missingSection = true;
+      }
+      // migracao: promo.text (mensagem unica) virou promo.messages (varias,
+      // rolando continuamente na tarjeta)
+      if (loaded.promo && !Array.isArray(loaded.promo.messages)) {
+        loaded.promo.messages = loaded.promo.text ? [loaded.promo.text] : [];
+        delete loaded.promo.text;
+        delete loaded.promo.highlight;
+        delete loaded.promo.animation;
+        missingSection = true;
+      }
+      if (missingSection) fs.writeFileSync(STATE_FILE, JSON.stringify(loaded, null, 2));
+      return loaded;
     } catch (err) {
       console.error('Falha ao ler state.json, recriando com valores padrao:', err);
       const initial = defaultState();

@@ -19,6 +19,8 @@ window.VideoPlayerModule = (function () {
   function advance() {
     if (queue.length === 0) return;
     currentIndex = (currentIndex + 1) % queue.length;
+    if (window.OfertaPlayerModule && window.OfertaPlayerModule.maybeShow(loadCurrent)) return;
+    if (window.WeatherScreenModule && window.WeatherScreenModule.maybeShow(loadCurrent)) return;
     loadCurrent();
   }
 

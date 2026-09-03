@@ -1,12 +1,11 @@
 window.ClockModule = (function () {
-  const clusterEl = document.getElementById('clock-cluster');
   const clockEl = document.getElementById('clock');
   const dateEl = document.getElementById('date');
 
   const DAYS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
   const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
-  let config = { enabled: true, format: '24h', position: 'top-right' };
+  let config = { enabled: true, format: '24h' };
 
   function tick() {
     if (!config.enabled) return;
@@ -27,8 +26,6 @@ window.ClockModule = (function () {
 
   function applyConfig(newConfig) {
     config = { ...config, ...newConfig };
-    clusterEl.style.display = config.enabled ? '' : 'none';
-    setAnchorPosition(clusterEl, config.position);
     tick();
   }
 
