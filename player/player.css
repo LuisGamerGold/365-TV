@@ -503,7 +503,7 @@ body {
   top: 41px;
   width: 620px;
   height: 1007px;
-  padding: 44px 57px 34px;
+  padding: 44px 57px 64px;
   /* flex column + margin-top:auto no qr-row: distribui o conteudo ate o fim
      do cartao (empurrando QR+legenda pra baixo) em vez de deixar um vao em
      branco depois de "Confira o anuncio completo", igual a coluna da foto
@@ -578,7 +578,7 @@ body {
   padding-top: 43px;
   display: flex;
   align-items: center;
-  gap: 47px;
+  gap: 40px;
 }
 
 /* Sem QR (qr-row fica display:none e sai do fluxo flex, entao seu
@@ -590,9 +590,9 @@ body {
 }
 
 .qr-box {
-  width: 224px;
-  height: 224px;
-  flex: 0 0 224px;
+  width: 264px;
+  height: 264px;
+  flex: 0 0 264px;
   background: #fff;
   display: grid;
   place-items: center;
@@ -607,10 +607,10 @@ body {
 }
 
 .scan-image {
-  width: 130px;
-  height: 130px;
+  width: 150px;
+  height: 150px;
   object-fit: contain;
-  flex: 0 0 130px;
+  flex: 0 0 150px;
 }
 
 .qr-caption {
