@@ -1,6 +1,6 @@
 {
   "name": "365-tv",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "365 TV - sistema de midia e informacoes para a TV da loja 365 Motos",
   "private": true,
   "main": "main.js",
