@@ -213,15 +213,21 @@ window.WeatherScreenModule = (function () {
   function finish(onDone) {
     clearTimeout(screenTimer);
     screenTimer = null;
-    area.classList.remove('active');
-    screenEl.classList.remove('wx-active');
-    if (onDone) onDone();
+    // cobre com a onda antes de esconder a tela de clima; quem revela e' o
+    // proximo conteudo (onDone), so' quando estiver de fato pronto - assim
+    // as duas trocas viram uma onda so' em vez de duas em sequencia.
+    window.TransitionModule.cover(() => {
+      area.classList.remove('active');
+      screenEl.classList.remove('wx-active');
+      if (onDone) onDone();
+    });
   }
 
   function play(onDone) {
     render();
     area.classList.add('active');
     screenEl.classList.add('wx-active');
+    window.TransitionModule.reveal();
     const secs = Math.max(5, Number(screenConfig.durationSeconds) || 25);
     clearTimeout(screenTimer);
     screenTimer = setTimeout(() => finish(onDone), secs * 1000);
@@ -237,7 +243,7 @@ window.WeatherScreenModule = (function () {
   // item da playlist so carrega quando a tela terminar (via onDone).
   function maybeShow(onDone) {
     if (!shouldTrigger()) return false;
-    play(onDone);
+    window.TransitionModule.cover(() => play(onDone));
     return true;
   }
 

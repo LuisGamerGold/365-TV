@@ -32,7 +32,7 @@ window.OfertaPlayerModule = (function () {
   // item da playlist so carrega quando a oferta terminar (via onDone).
   function maybeShow(onDone) {
     if (!shouldTrigger()) return false;
-    play(onDone);
+    window.TransitionModule.cover(() => play(onDone));
     return true;
   }
 
@@ -90,6 +90,7 @@ window.OfertaPlayerModule = (function () {
     showPhoto();
 
     area.classList.add('active');
+    window.TransitionModule.reveal();
 
     const secs = Math.max(2, Number(config.secondsPerPhoto) || 5);
     let shownCount = 1;
@@ -107,8 +108,13 @@ window.OfertaPlayerModule = (function () {
   function finish(onDone) {
     clearInterval(photoTimer);
     photoTimer = null;
-    area.classList.remove('active');
-    if (onDone) onDone();
+    // cobre com a onda antes de esconder a oferta; quem revela e' o proximo
+    // conteudo (onDone), que fica responsavel por chamar reveal() quando
+    // estiver de fato pronto - assim as duas trocas viram uma onda so'.
+    window.TransitionModule.cover(() => {
+      area.classList.remove('active');
+      if (onDone) onDone();
+    });
   }
 
   return { applyState, maybeShow };

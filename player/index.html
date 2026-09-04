@@ -10,8 +10,13 @@
     <main id="screen">
 
       <div class="video-layer">
-        <video id="video-el" autoplay muted></video>
-        <img id="image-el" style="display:none" />
+        <!-- Dois <video> alternados: enquanto um toca, o outro pre-carrega o
+             proximo item em segundo plano (ver video-player.js) - a troca so'
+             acontece quando o novo ja' tem o primeiro frame pronto, sem tela
+             preta no meio. -->
+        <video id="video-el" class="media-el" autoplay muted></video>
+        <video id="video-el-2" class="media-el" autoplay muted style="display:none"></video>
+        <img id="image-el" class="media-el" style="display:none" />
         <div class="empty-state" id="empty-state">365 TV — adicione videos pelo painel administrativo</div>
       </div>
 
@@ -67,6 +72,7 @@
             </div>
           </div>
           <img class="music-controls-img" src="assets/icons/music-controls.png" alt="" />
+        </div>
       </div>
 
       <footer class="ticker card" id="promo-bar" style="display:none">
@@ -215,11 +221,25 @@
         </div>
       </div>
 
+      <!-- Transicao de ondas (azul + branca) usada ao trocar de video, e ao
+           entrar/sair da oferta e da previsao do tempo (ver modules/
+           transition.js). Fica por cima do video/oferta/clima (z-index 8,
+           ultimo do DOM) mas por baixo da tarjeta e dos widgets fixos
+           (z-index 9/10) - o "letreiro" e os cantos continuam visiveis
+           durante a troca. -->
+      <div class="wave-transition" id="wave-transition">
+        <div class="wave-pair" id="wave-pair">
+          <div class="wave-blue"></div>
+          <div class="wave-white"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="modules/anchor.js"></script>
+  <script src="modules/transition.js"></script>
   <script src="modules/clock.js"></script>
   <script src="modules/weather.js"></script>
   <script src="modules/info-pill.js"></script>

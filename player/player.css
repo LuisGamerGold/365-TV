@@ -50,8 +50,10 @@ body {
     linear-gradient(135deg, #eef1f3 0%, #f8f8f9 52%, #edf2f6 100%);
 }
 
-#video-el,
-#image-el {
+/* .media-el: video-el e video-el-2 (par usado para pre-carregar o proximo
+   video em segundo plano e trocar sem tela preta - ver video-player.js) e
+   image-el compartilham o mesmo enquadramento. */
+.media-el {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -762,3 +764,55 @@ body {
 .wx-next-sun .wx-sun-item svg { width: 42px; height: 42px; flex-basis: 42px; }
 .wx-next-sun .wx-sun-name { display: none; }
 .wx-next-sun .wx-sun-time { font-size: 22px; margin: 0; }
+
+/* ==========================
+   TRANSICAO DE ONDAS (video / oferta / previsao do tempo)
+   Duas faixas com borda ondulada (azul entrando, branca logo atras dela)
+   varrem a tela da esquerda pra direita: quando estao lado a lado cobrindo
+   os 1920px inteiros, o conteudo por baixo e' trocado escondido; depois
+   as ondas continuam e revelam o conteudo novo (ver modules/transition.js).
+   ========================== */
+.wave-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wave-pair {
+  position: absolute;
+  left: 0;
+  /* altura maior que os 1080px do canvas (centralizada com top negativo)
+     pra sobrar margem vertical mesmo com a ondulacao da borda */
+  top: -160px;
+  width: 2550px;
+  height: 1400px;
+  transform: translateX(-2560px);
+  will-change: transform;
+}
+
+.wave-blue,
+.wave-white {
+  position: absolute;
+  top: 0;
+  width: 1400px;
+  height: 1400px;
+}
+
+/* onda azul: borda ondulada na esquerda (lado que entra primeiro na tela) */
+.wave-blue {
+  left: 0;
+  background: var(--blue);
+  clip-path: polygon(3.57% 0.00%, 4.94% 2.08%, 6.10% 4.17%, 6.87% 6.25%, 7.14% 8.33%, 6.87% 10.42%, 6.10% 12.50%, 4.94% 14.58%, 3.57% 16.67%, 2.20% 18.75%, 1.05% 20.83%, 0.27% 22.92%, 0.00% 25.00%, 0.27% 27.08%, 1.05% 29.17%, 2.20% 31.25%, 3.57% 33.33%, 4.94% 35.42%, 6.10% 37.50%, 6.87% 39.58%, 7.14% 41.67%, 6.87% 43.75%, 6.10% 45.83%, 4.94% 47.92%, 3.57% 50.00%, 2.20% 52.08%, 1.05% 54.17%, 0.27% 56.25%, 0.00% 58.33%, 0.27% 60.42%, 1.05% 62.50%, 2.20% 64.58%, 3.57% 66.67%, 4.94% 68.75%, 6.10% 70.83%, 6.87% 72.92%, 7.14% 75.00%, 6.87% 77.08%, 6.10% 79.17%, 4.94% 81.25%, 3.57% 83.33%, 2.20% 85.42%, 1.05% 87.50%, 0.27% 89.58%, 0.00% 91.67%, 0.27% 93.75%, 1.05% 95.83%, 2.20% 97.92%, 3.57% 100.00%, 100% 100%, 100% 0%);
+}
+
+/* onda branca: 250px sobrepostos a onda azul (cobre a borda reta dela sem
+   frestas) e sua propria borda ondulada fica na direita - e' a que revela
+   o conteudo novo ao sair de tela. */
+.wave-white {
+  left: 1150px;
+  background: #fff;
+  clip-path: polygon(0% 0%, 0% 100%, 92.86% 100.00%, 93.13% 97.92%, 93.90% 95.83%, 95.06% 93.75%, 96.43% 91.67%, 97.80% 89.58%, 98.95% 87.50%, 99.73% 85.42%, 100.00% 83.33%, 99.73% 81.25%, 98.95% 79.17%, 97.80% 77.08%, 96.43% 75.00%, 95.06% 72.92%, 93.90% 70.83%, 93.13% 68.75%, 92.86% 66.67%, 93.13% 64.58%, 93.90% 62.50%, 95.06% 60.42%, 96.43% 58.33%, 97.80% 56.25%, 98.95% 54.17%, 99.73% 52.08%, 100.00% 50.00%, 99.73% 47.92%, 98.95% 45.83%, 97.80% 43.75%, 96.43% 41.67%, 95.06% 39.58%, 93.90% 37.50%, 93.13% 35.42%, 92.86% 33.33%, 93.13% 31.25%, 93.90% 29.17%, 95.06% 27.08%, 96.43% 25.00%, 97.80% 22.92%, 98.95% 20.83%, 99.73% 18.75%, 100.00% 16.67%, 99.73% 14.58%, 98.95% 12.50%, 97.80% 10.42%, 96.43% 8.33%, 95.06% 6.25%, 93.90% 4.17%, 93.13% 2.08%, 92.86% 0.00%);
+}
