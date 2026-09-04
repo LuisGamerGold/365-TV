@@ -72,7 +72,8 @@ function createServer() {
   app.use('/admin/api/weather-screen', requireAuth, require('./routes/weather-screen')(state));
   app.use('/admin', requireAuth, express.static(ADMIN_DIR));
 
-  app.get('/api/status', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+  const { version } = require('../package.json');
+  app.get('/api/status', (req, res) => res.json({ ok: true, uptime: process.uptime(), version }));
 
   // Repassa mudancas de estado para a tela da TV em tempo real.
   for (const section of ['videos', 'promo', 'widgets', 'music', 'oferta', 'weatherScreen']) {

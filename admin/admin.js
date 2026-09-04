@@ -34,8 +34,14 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 
 async function refreshStatus() {
   const badge = document.getElementById('status-badge');
+  const versionTag = document.getElementById('version-tag');
   try {
-    await fetch('/api/status');
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    // versao do servidor que esta respondendo (a TV a que este painel esta
+    // conectado agora), nao a do navegador do painel - assim da pra saber se
+    // essa TV especifica ja pegou uma atualizacao ou ainda esta desatualizada.
+    versionTag.textContent = data.version ? `v${data.version}` : '';
     badge.textContent = 'TV online';
     badge.className = 'badge online';
   } catch {

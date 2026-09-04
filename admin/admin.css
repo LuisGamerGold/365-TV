@@ -105,6 +105,13 @@ html, body {
 .badge.online { background: var(--green-soft); color: var(--green); }
 .badge.offline { background: var(--red-soft); color: var(--red); }
 
+.version-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray);
+  opacity: .6;
+}
+
 .link-btn {
   font-size: 12px;
   font-weight: 600;

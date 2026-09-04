@@ -40,16 +40,26 @@ window.PromoBarModule = (function () {
     track.appendChild(buildGroup(messages));
     track.appendChild(buildGroup(messages));
 
+    // rAF duplo: garante que o "display:none -> flex" da tarjeta (feito no
+    // render() logo antes desta chamada) ja' foi pintado antes de medir a
+    // largura - um unico rAF as vezes roda antes do primeiro paint depois de
+    // uma mudanca de display, o que mediria a largura errada e faria a 2a
+    // copia do texto nao encostar certinho onde a 1a comecou. Mesma tecnica
+    // do music-widget.js (endurecimento preventivo - nao reproduzi o gap com
+    // rAF unico em teste headless ocioso, mas o cenario real tem o video
+    // decodificando ao mesmo tempo, competindo pela main thread).
     requestAnimationFrame(() => {
-      const width = track.children[0].getBoundingClientRect().width;
-      track.style.setProperty('--ticker-group-width', `${width}px`);
-      const duration = Math.max(MIN_DURATION_SECONDS, width / PIXELS_PER_SECOND);
-      track.style.animationDuration = `${duration}s`;
-      // reinicia a animacao do zero para nao "pular" apos remontar o conteudo
-      track.style.animationName = 'none';
-      // eslint-disable-next-line no-unused-expressions
-      track.offsetHeight;
-      track.style.animationName = 'tickerScroll';
+      requestAnimationFrame(() => {
+        const width = track.children[0].getBoundingClientRect().width;
+        track.style.setProperty('--ticker-group-width', `${width}px`);
+        const duration = Math.max(MIN_DURATION_SECONDS, width / PIXELS_PER_SECOND);
+        track.style.animationDuration = `${duration}s`;
+        // reinicia a animacao do zero para nao "pular" apos remontar o conteudo
+        track.style.animationName = 'none';
+        // eslint-disable-next-line no-unused-expressions
+        track.offsetHeight;
+        track.style.animationName = 'tickerScroll';
+      });
     });
   }
 
