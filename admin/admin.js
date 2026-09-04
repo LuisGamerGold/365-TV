@@ -116,6 +116,22 @@ function moveVideo(id, direction) {
   api('/admin/api/videos/reorder', { method: 'POST', body: JSON.stringify({ order: ids }) }).then(loadVideos);
 }
 
+function uploadVideo(formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/api/videos');
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(xhr.responseText || `Erro ${xhr.status}`));
+    });
+    xhr.addEventListener('error', () => reject(new Error('Falha de conexão')));
+    xhr.send(formData);
+  });
+}
+
 document.getElementById('upload-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const file = document.getElementById('upload-file').files[0];
@@ -128,12 +144,30 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
   if (title) formData.append('title', title);
   if (durationSeconds) formData.append('durationSeconds', durationSeconds);
 
-  const res = await fetch('/admin/api/videos', { method: 'POST', body: formData });
-  if (res.ok) {
+  const submitBtn = document.getElementById('upload-submit');
+  const progressWrap = document.getElementById('upload-progress');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const progressText = document.getElementById('upload-progress-text');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando...';
+  progressWrap.hidden = false;
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Enviando... 0%';
+
+  try {
+    await uploadVideo(formData, (percent) => {
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = percent < 100 ? `Enviando... ${percent}%` : 'Processando...';
+    });
     e.target.reset();
-    loadVideos();
-  } else {
-    alert('Falha ao enviar arquivo: ' + (await res.text()));
+    await loadVideos();
+  } catch (err) {
+    alert('Falha ao enviar arquivo: ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Adicionar';
+    progressWrap.hidden = true;
   }
 });
 

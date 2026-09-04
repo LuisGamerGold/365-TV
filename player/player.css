@@ -298,7 +298,7 @@ body {
   align-items: center;
   white-space: nowrap;
   will-change: transform;
-  animation: musicMove var(--music-duration) ease-in-out infinite alternate;
+  animation: musicMove var(--music-duration) linear infinite;
 }
 
 .music-title {
@@ -312,9 +312,13 @@ body {
   padding-right: 45px;
 }
 
+/* percorre o titulo duplicado (ver music-widget.js) de ponta a ponta e
+   reinicia: como a 2a copia esta encostada na 1a, o reinicio e' invisivel,
+   dando a impressao de um letreiro rodando em loop continuo (igual a
+   tarjeta de promocao) em vez de ir e voltar */
 @keyframes musicMove {
-  0%, 15% { transform: translateX(0); }
-  85%, 100% { transform: translateX(var(--music-shift, 0px)); }
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--music-shift, 0px)); }
 }
 
 .music-controls-img {

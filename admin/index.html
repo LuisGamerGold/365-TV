@@ -41,8 +41,12 @@
           <input type="file" id="upload-file" accept="video/*,image/*" required />
           <input type="text" id="upload-title" placeholder="Título (opcional)" />
           <input type="number" id="upload-duration" placeholder="Duração (seg) — só p/ imagem" min="1" />
-          <button type="submit">Adicionar</button>
+          <button type="submit" id="upload-submit">Adicionar</button>
         </form>
+        <div id="upload-progress" class="upload-progress" hidden>
+          <div class="upload-progress-bar"><div id="upload-progress-fill" class="upload-progress-fill"></div></div>
+          <span id="upload-progress-text" class="upload-progress-text">Enviando... 0%</span>
+        </div>
         <ul id="video-list" class="list video-list"></ul>
       </section>
     </div>

@@ -9,6 +9,7 @@ window.PromoBarModule = (function () {
   const MIN_DURATION_SECONDS = 10;
 
   let promo = null;
+  let renderedKey = null;
 
   function isWithinWindow(p) {
     const now = Date.now();
@@ -56,12 +57,22 @@ window.PromoBarModule = (function () {
     const messages = promo && Array.isArray(promo.messages) ? promo.messages : [];
     if (!promo || !promo.active || messages.length === 0 || !isWithinWindow(promo)) {
       bar.style.display = 'none';
+      renderedKey = null;
       return;
     }
     bar.classList.toggle('pos-top', promo.position === 'top');
     bar.classList.toggle('pos-bottom', promo.position !== 'top');
     bar.style.display = 'flex';
-    renderTrack(messages);
+
+    // so remonta a faixa (e reinicia o loop) quando as mensagens realmente
+    // mudam - essa funcao roda de novo a cada 30s so pra reavaliar a janela
+    // de data/hora, e reconstruir toda hora fazia o letreiro "resetar" no
+    // meio do loop em vez de rodar continuo pra frente
+    const key = JSON.stringify(messages) + '|' + promo.position;
+    if (key !== renderedKey) {
+      renderedKey = key;
+      renderTrack(messages);
+    }
   }
 
   function applyState(newPromo) {

@@ -4,25 +4,40 @@ window.MusicWidgetModule = (function () {
   const placeholderEl = document.getElementById('music-placeholder');
   const marqueeEl = document.getElementById('music-marquee');
   const trackEl = document.getElementById('music-track');
-  const titleEl = document.getElementById('music-title');
 
   let enabled = true;
   let position = 'bottom-right';
   let lastTrack = null;
+  let lastRenderedText = null;
 
-  function renderMarquee() {
+  function buildTitle(text) {
+    const span = document.createElement('span');
+    span.className = 'music-title';
+    span.textContent = text;
+    return span;
+  }
+
+  function renderMarquee(text) {
+    trackEl.innerHTML = '';
+    trackEl.appendChild(buildTitle(text));
+
     // rAF duplo: garante que o "display:flex" (e o layout resultante) ja'
     // foi pintado antes de medir scrollWidth/clientWidth - um unico rAF as
     // vezes roda antes do primeiro paint depois de uma mudanca de display.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const overflow = Math.max(0, titleEl.scrollWidth - marqueeEl.clientWidth + 6);
-
-        trackEl.style.transform = '';
+        const single = trackEl.children[0];
+        const overflow = single.scrollWidth - marqueeEl.clientWidth;
 
         if (overflow > 4) {
-          trackEl.style.setProperty('--music-shift', `${-overflow}px`);
-          trackEl.style.setProperty('--music-duration', `${Math.max(6, overflow / 20)}s`);
+          // duplica o titulo pra o loop ficar continuo (mesma tecnica da
+          // tarjeta de promocao): quando a 1a copia sai da tela pela
+          // esquerda, a 2a ja esta encostada nela, entao nunca "reseta"
+          // visivelmente - fica rodando pra frente sem parar
+          trackEl.appendChild(buildTitle(text));
+          const shift = single.getBoundingClientRect().width;
+          trackEl.style.setProperty('--music-shift', `${-shift}px`);
+          trackEl.style.setProperty('--music-duration', `${Math.max(6, shift / 20)}s`);
         } else {
           trackEl.style.setProperty('--music-shift', '0px');
         }
@@ -44,10 +59,11 @@ window.MusicWidgetModule = (function () {
   function render() {
     if (!enabled || !lastTrack) {
       el.style.display = 'none';
+      lastRenderedText = null;
       return;
     }
 
-    titleEl.textContent = [lastTrack.artist, lastTrack.title].filter(Boolean).join(' — ');
+    const text = [lastTrack.artist, lastTrack.title].filter(Boolean).join(' — ');
 
     if (lastTrack.albumArt) {
       coverEl.src = lastTrack.albumArt;
@@ -61,7 +77,15 @@ window.MusicWidgetModule = (function () {
 
     setAnchorPosition(el, position);
     el.style.display = 'flex';
-    renderMarquee();
+
+    // so remonta a faixa (e reinicia o loop) quando a musica realmente
+    // mudou - o servidor reemite "now playing" a cada poll (10s) mesmo
+    // tocando a mesma faixa, e reconstruir toda hora fazia o letreiro
+    // "resetar" no meio do loop em vez de rodar continuo pra frente
+    if (text !== lastRenderedText) {
+      lastRenderedText = text;
+      renderMarquee(text);
+    }
   }
 
   function applyConfig(config) {
