@@ -17,6 +17,14 @@ window.MusicWidgetModule = (function () {
     return span;
   }
 
+  function buildSeparator() {
+    // ponto (sem texto) igual ao separador da tarjeta de promocao
+    // (.ticker-dot), pra manter o mesmo estilo visual entre os dois letreiros
+    const span = document.createElement('span');
+    span.className = 'music-dot';
+    return span;
+  }
+
   function renderMarquee(text) {
     trackEl.innerHTML = '';
     trackEl.appendChild(buildTitle(text));
@@ -30,14 +38,19 @@ window.MusicWidgetModule = (function () {
         const overflow = single.scrollWidth - marqueeEl.clientWidth;
 
         if (overflow > 4) {
-          // duplica o titulo pra o loop ficar continuo (mesma tecnica da
-          // tarjeta de promocao): quando a 1a copia sai da tela pela
-          // esquerda, a 2a ja esta encostada nela, entao nunca "reseta"
-          // visivelmente - fica rodando pra frente sem parar
+          // repete "titulo + separador" como uma unidade (igual aos pontos
+          // da tarjeta de promocao, so' que com travessao): quando a 1a
+          // unidade sai da tela pela esquerda, a 2a (identica) ja esta
+          // encostada nela, entao le-se "titulo — titulo — titulo — ..." em
+          // loop continuo, sem vao mudo nem reset visivel. O deslocamento
+          // tem que ser exatamente a largura de UMA unidade (titulo+
+          // separador) pra 2a unidade encostar onde a 1a comecou.
+          trackEl.appendChild(buildSeparator());
+          const unitWidth = trackEl.scrollWidth;
           trackEl.appendChild(buildTitle(text));
-          const shift = single.getBoundingClientRect().width;
-          trackEl.style.setProperty('--music-shift', `${-shift}px`);
-          trackEl.style.setProperty('--music-duration', `${Math.max(6, shift / 20)}s`);
+          trackEl.appendChild(buildSeparator());
+          trackEl.style.setProperty('--music-shift', `${-unitWidth}px`);
+          trackEl.style.setProperty('--music-duration', `${Math.max(6, unitWidth / 20)}s`);
         } else {
           trackEl.style.setProperty('--music-shift', '0px');
         }

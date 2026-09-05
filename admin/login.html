@@ -2,35 +2,68 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<title>365 TV — Painel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>365 TV — Login</title>
 <link rel="stylesheet" href="admin.css" />
 </head>
 <body class="login-page">
   <div class="bg-glow-1"></div>
   <div class="bg-glow-2"></div>
-  <form id="login-form" class="login-card">
+  <div class="login-card">
     <h1>365 TV</h1>
     <p class="subtitle">Painel administrativo</p>
-    <input type="password" id="password" placeholder="Senha" autofocus required />
-    <button type="submit">Entrar</button>
-    <p id="login-error" class="error"></p>
-  </form>
+
+    <p id="login-error" class="login-error"></p>
+
+    <form id="login-form">
+      <label for="password">Senha</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" autofocus required />
+      <button type="submit" id="login-submit">Entrar</button>
+    </form>
+
+    <p id="login-version" class="login-version"></p>
+  </div>
 
   <script>
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    const form = document.getElementById('login-form');
+    const errorEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-submit');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const password = document.getElementById('password').value;
-      const res = await fetch('/admin/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      if (res.ok) {
-        window.location.href = '/admin/';
-      } else {
-        document.getElementById('login-error').textContent = 'Senha incorreta.';
+      btn.disabled = true;
+      btn.textContent = 'Entrando...';
+      errorEl.classList.remove('show');
+
+      try {
+        const res = await fetch('/admin/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (res.ok) {
+          window.location.href = '/admin/';
+          return;
+        }
+        errorEl.textContent = res.status === 401 ? 'Senha incorreta.' : 'Erro ao conectar. Tente novamente.';
+        errorEl.classList.add('show');
+      } catch {
+        errorEl.textContent = 'Erro de conexão com o servidor.';
+        errorEl.classList.add('show');
       }
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
     });
+
+    // versao do servidor que respondeu - mesma fonte usada no badge do
+    // painel, ajuda a conferir a build da TV mesmo antes de logar
+    fetch('/api/status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.version) document.getElementById('login-version').textContent = `365 TV v${data.version}`;
+      })
+      .catch(() => {});
   </script>
 </body>
 </html>

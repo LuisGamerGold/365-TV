@@ -47,6 +47,13 @@ function createServer() {
   app.get('/admin/login.html', (req, res) => {
     res.sendFile(path.join(ADMIN_DIR, 'login.html'));
   });
+  // admin.css e' compartilhado entre login.html e o painel - sem essa rota
+  // publica, o <link> da tela de login cai no requireAuth do static('/admin')
+  // la embaixo, ganha um redirect pro proprio login.html (HTML no lugar de
+  // CSS) e a pagina de login renderiza sem nenhum estilo.
+  app.get('/admin/admin.css', (req, res) => {
+    res.sendFile(path.join(ADMIN_DIR, 'admin.css'));
+  });
   app.post('/admin/api/login', (req, res) => {
     const { password } = req.body || {};
     if (typeof password === 'string' && state.checkPassword(password)) {

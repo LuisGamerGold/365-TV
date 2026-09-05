@@ -309,7 +309,19 @@ body {
      mascara desbota as primeiras letras do texto mesmo parado (translateX 0),
      dando impressao de nome cortado no inicio. */
   padding-left: 12px;
-  padding-right: 45px;
+}
+
+/* ponto entre as copias do titulo quando ele rola em loop (ver
+   music-widget.js) - com isso o loop le' "titulo • titulo • titulo • ..."
+   em vez de deixar um vao mudo entre uma copia e a proxima. Mesmo estilo do
+   separador da tarjeta de promocao (.ticker-dot). */
+.music-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex: 0 0 auto;
+  margin: 0 14px;
 }
 
 /* percorre o titulo duplicado (ver music-widget.js) de ponta a ponta e
