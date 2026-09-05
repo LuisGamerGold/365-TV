@@ -11,12 +11,15 @@ window.VideoPlayerModule = (function () {
   const emptyState = document.getElementById('empty-state');
 
   const READY_FALLBACK_MS = 4000;
+  const STALL_CHECK_MS = 3000;
+  const STALL_TIMEOUT_MS = 8000;
 
   let queue = [];
   let currentIndex = 0;
   let imageTimer = null;
   let activeVideo = 0;
   let consecutiveErrors = 0;
+  let stallWatch = { time: -1, since: Date.now() };
 
   function mediaUrl(item) {
     return `/media/videos/${item.filename}`;
@@ -161,6 +164,38 @@ window.VideoPlayerModule = (function () {
       if (videoEls.indexOf(el) === activeVideo && !el.loop) advance();
     });
   });
+
+  function overlayActive() {
+    const oferta = document.getElementById('oferta-area');
+    const wx = document.getElementById('wx-area');
+    return Boolean((oferta && oferta.classList.contains('active')) || (wx && wx.classList.contains('active')));
+  }
+
+  // Se o video em tela travar (decoder engasgado, arquivo com problema no
+  // meio, etc.) o "ended" nunca dispara e a playlist inteira fica presa -
+  // oferta e tela de clima tambem param, ja que so' entram entre um video e
+  // outro. Aqui a gente detecta a falta de progresso e forca o avanco.
+  setInterval(() => {
+    if (queue.length === 0 || overlayActive()) return;
+    const item = queue[currentIndex];
+    if (!item || item.type !== 'video') return;
+
+    const el = videoEls[activeVideo];
+    if (el.style.display === 'none' || el.paused || el.ended) {
+      stallWatch = { time: el.currentTime, since: Date.now() };
+      return;
+    }
+
+    if (el.currentTime !== stallWatch.time) {
+      stallWatch = { time: el.currentTime, since: Date.now() };
+      return;
+    }
+
+    if (Date.now() - stallWatch.since >= STALL_TIMEOUT_MS) {
+      stallWatch = { time: el.currentTime, since: Date.now() };
+      advance();
+    }
+  }, STALL_CHECK_MS);
 
   function applyPlaylist(videosState) {
     const currentId = queue[currentIndex] && queue[currentIndex].id;
