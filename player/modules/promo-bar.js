@@ -5,6 +5,7 @@
 window.PromoBarModule = (function () {
   const bar = document.getElementById('promo-bar');
   const track = document.getElementById('ticker-track');
+  const windowEl = document.querySelector('.ticker-window');
   const PIXELS_PER_SECOND = 55;
   const MIN_DURATION_SECONDS = 10;
 
@@ -35,9 +36,6 @@ window.PromoBarModule = (function () {
 
   function renderTrack(messages) {
     track.innerHTML = '';
-    // duplica o grupo para o loop ficar continuo (quando o primeiro sai da
-    // tela, o segundo ja esta encostado nele)
-    track.appendChild(buildGroup(messages));
     track.appendChild(buildGroup(messages));
 
     // rAF duplo: garante que o "display:none -> flex" da tarjeta (feito no
@@ -51,6 +49,18 @@ window.PromoBarModule = (function () {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const width = track.children[0].getBoundingClientRect().width;
+
+        // duplica o grupo pra o loop ficar continuo (quando o 1o sai da tela,
+        // o 2o ja esta encostado nele) - mas com mensagens curtas, 2 copias
+        // as vezes nao enchem a janela visivel da tarjeta (ex: mensagem de
+        // 345px numa janela de 1020px = so' 690px de conteudo), deixando um
+        // vao vazio depois da 2a copia antes do loop reiniciar. Repete o
+        // quanto for preciso pra cobrir a janela inteira + 1 grupo de folga.
+        const repeatCount = Math.max(2, Math.ceil(windowEl.clientWidth / width) + 1);
+        for (let i = 1; i < repeatCount; i++) {
+          track.appendChild(buildGroup(messages));
+        }
+
         track.style.setProperty('--ticker-group-width', `${width}px`);
         const duration = Math.max(MIN_DURATION_SECONDS, width / PIXELS_PER_SECOND);
         track.style.animationDuration = `${duration}s`;

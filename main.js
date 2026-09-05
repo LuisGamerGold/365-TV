@@ -46,7 +46,16 @@ async function createWindow() {
     fullscreen: true,
     kiosk: true,
     autoHideMenuBar: true,
-    backgroundColor: '#000000'
+    backgroundColor: '#000000',
+    webPreferences: {
+      // sem isso, se a janela perder o foco por qualquer motivo (RDP,
+      // manutencao remota, um popup do Windows) o Chromium reduz drasticamente
+      // o ritmo das animacoes CSS (tarjeta, pilula de musica) - o mesmo
+      // comportamento de economia de energia que ele aplica a uma aba em
+      // segundo plano. A tela e' kiosk/fullscreen e nao deveria perder foco
+      // no uso normal, mas isso garante que a animacao nunca dependa disso.
+      backgroundThrottling: false
+    }
   });
 
   mainWindow.loadURL(`http://localhost:${port}/player`);
